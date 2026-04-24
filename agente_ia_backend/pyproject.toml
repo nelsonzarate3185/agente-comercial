@@ -1,0 +1,16 @@
+[project]
+name = "agente-ia-backend"
+version = "0.1.0"
+description = "Agente IA Comercial (FastAPI) para Oracle APEX + Oracle 12c"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic",
+  "python-dotenv",
+  "oracledb",
+]
+
+[tool.uvicorn]
+factory = false
+
