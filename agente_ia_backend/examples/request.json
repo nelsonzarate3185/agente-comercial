@@ -1,0 +1,10 @@
+{
+  "mensaje": "¿Qué productos tienen poco stock?",
+  "usuario": "APEX_USER",
+  "contexto": {
+    "min_stock": 5,
+    "dias_inactivo": 60,
+    "periodo": "mes"
+  }
+}
+
