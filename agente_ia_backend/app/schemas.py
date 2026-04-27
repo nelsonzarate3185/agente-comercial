@@ -11,6 +11,11 @@ class ChatRequest(BaseModel):
     historial: list[dict[str, str]] | None = None
 
 
+class GreetRequest(BaseModel):
+    usuario: str = Field(min_length=1, max_length=255)
+    contexto: dict[str, Any] | None = None
+
+
 class ChatResponse(BaseModel):
     respuesta: str
     sql_generado: str | None = None

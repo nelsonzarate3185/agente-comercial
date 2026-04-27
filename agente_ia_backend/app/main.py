@@ -6,8 +6,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import oracledb
 
-from .agent import handle_chat
-from .schemas import ChatRequest, ChatResponse
+from .agent import handle_chat, handle_greet
+from .schemas import ChatRequest, ChatResponse, GreetRequest
 from .security import require_api_key
 from .settings import settings
 
@@ -31,6 +31,20 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/greet", response_model=ChatResponse)
+def greet(payload: GreetRequest, _: None = Depends(require_api_key)) -> ChatResponse:
+    try:
+        res = handle_greet(payload.usuario, payload.contexto)
+        return ChatResponse(respuesta=res.respuesta, sql_generado=res.sql_generado, datos=res.datos)
+    except Exception:
+        log.exception("Error in /greet")
+        return ChatResponse(
+            respuesta="Hola 👋\n\nSoy tu asistente comercial. ¿En qué te puedo ayudar hoy?",
+            sql_generado=None,
+            datos={"intencion": "GREET_FALLBACK"},
+        )
 
 
 @app.post("/chat", response_model=ChatResponse)

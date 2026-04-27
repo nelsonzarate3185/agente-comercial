@@ -790,12 +790,12 @@ wwv_flow_imp_page.create_page_da_action(
 ' +''<div style="display:flex;gap:8px;align-items:center;"><span id=aiClear_233 style="cursor:pointer;font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.5);">Vaciar</span>''',
 ' +''<span id=aiX_233 style="cursor:pointer;font-size:20px;">&times;</span></div></div>''',
 ' +''<div id=aiQA_233 style="background:#e8f0fe;padding:5px 10px;display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid #d0d8f0;">''',
-' +''<button id=qaV style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128202; Ventas</button>''',
-' +''<button id=qaK style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128230; Stock</button>''',
-' +''<button id=qaP style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#127919; Promos</button>''',
-' +''<button id=qaC style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128100; Clientes</button></div>''',
+' +''<button id=qaV style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128202; Mis Ventas</button>''',
+' +''<button id=qaK style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128230; Stock Critico</button>''',
+' +''<button id=qaP style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128100; Inactivos</button>''',
+' +''<button id=qaC style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#127919; Oportunidades</button></div>''',
 ' +''<div id=aiH_233 style="height:390px;overflow-y:auto;padding:12px;background:#f4f6f8;"></div>''',
-' +''<div id=aiCSV_233 style="display:none;padding:3px 10px;background:#fff;text-align:right;border-top:1px solid #eee;"><a id=aiCSVLnk href=# style="font-size:11px;color:#0572c6;">&darr; Exportar CSV</a></div>''',
+' +''<div id=aiCSV_233 style="display:none;padding:3px 10px;background:#fff;text-align:right;border-top:1px solid #eee;"><a id=aiCSVLnk href=# style="font-size:11px;color:#0572c6;">&darr; Exportar XLS</a></div>''',
 ' +''<div style="display:flex;gap:6px;padding:10px;background:#fff;border-top:1px solid #ddd;">''',
 ' +''<input id=aiI_233 type=text placeholder="Escribe tu pregunta..." style="flex:1;padding:8px 11px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-transform:uppercase;">''',
 ' +''<button id=aiS_233 type=button style="padding:8px 14px;background:#0572c6;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:13px;">Enviar</button>''',
@@ -820,14 +820,14 @@ wwv_flow_imp_page.create_page_da_action(
 'for(var i=0;i<c.length;i++){var m=c[i],u=m.role===''user'';',
 'h.push(''<div style="margin:5px 0;padding:9px 12px;border-radius:10px;max-width:90%;background:''+(u?''#0572c6'':''#fff'')+'';color:''+(u?''#fff'':''#333'')+'';white-space:pre-line;''+(u?''margin-left:auto;text-align:right;'':'''')+''">''+(u?esc(m.content):m.content)+''</div>'');',
 '}el.innerHTML=h.join('''');el.scrollTop=el.scrollHeight;}',
-'function clearChat(){if(confirm(''Vaciar la conversacion?'')){setC([]);lastDatos=null;CSV.style.display=''none'';render();}}',
+'function clearChat(){if(confirm(''Vaciar la conversacion?'')){setC([]);lastDatos=null;CSV.style.display=''none'';render();if(window._aiGreet)window._aiGreet();}}',
 'function app(r,c){var x=getC();x.push({role:r,content:c});setC(x);render();}',
-'function doCSV(){if(!lastDatos||!lastDatos.filas||!lastDatos.filas.length)return;',
+'function doExcel(){if(!lastDatos||!lastDatos.filas||!lastDatos.filas.length)return;',
 'var cols=lastDatos.columnas||Object.keys(lastDatos.filas[0]);',
-'var rows=[cols.join('','')];',
-'var q=''"'';lastDatos.filas.forEach(function(r){',
-'rows.push(cols.map(function(c){var v=String(r[c]||'''');return q+v.replace(/"/g,q+q)+q;}).join('',''));});',
-'if(lnk){lnk.href=''data:text/csv;charset=utf-8,''+encodeURIComponent(rows.join(''\n''));lnk.download=''datos.csv'';}}',
+'var html=''<table><tr>''+cols.map(function(c){return''<th>''+c+''</th>'';}).join('''')+''</tr>'';',
+'lastDatos.filas.forEach(function(r){html+=''<tr>''+cols.map(function(c){return''<td>''+String(r[c]||'''')+''</td>'';}).join('''')+''</tr>'';});',
+'html+=''</table>'';',
+'if(lnk){lnk.href=''data:application/vnd.ms-excel,''+encodeURIComponent(html);lnk.download=''datos.xls'';}}',
 'function send(m){',
 'if(!m){if(!inp)return;m=(inp.value||'''').trim();if(!m)return;inp.value='''';}',
 'm=m.toUpperCase();var hist=getC().slice(-6);app(''user'',m);',
@@ -839,7 +839,7 @@ wwv_flow_imp_page.create_page_da_action(
 'body:JSON.stringify({mensaje:m,usuario:''&APP_USER.'',contexto:{cod_empresa:cod,cod_vendedor:ven,ver_otros_vendedores:otros,periodo:''mes''},historial:hist})})',
 '.then(function(r){if(!r.ok)throw r.status;return r.json();})',
 '.then(function(j){app(''assistant'',j&&j.respuesta?j.respuesta:''Sin respuesta.'');',
-'if(j&&j.datos&&j.datos.filas&&j.datos.filas.length){lastDatos=j.datos;doCSV();CSV.style.display=''block'';}',
+'if(j&&j.datos&&j.datos.filas&&j.datos.filas.length){lastDatos=j.datos;doExcel();CSV.style.display=''block'';}',
 'else{lastDatos=null;CSV.style.display=''none'';}}).catch(function(){app(''assistant'',''Error al conectar con el agente IA.'');})',
 '.finally(function(){if(btn){btn.disabled=false;btn.textContent=''Enviar'';}});}',
 'B=d.getElementById(''aiBtn_233'');P=d.getElementById(''aiPan_233'');',
@@ -851,10 +851,43 @@ wwv_flow_imp_page.create_page_da_action(
 'd.getElementById(''aiClear_233'').onclick=clearChat;',
 'btn.onclick=function(){send(null);};',
 'inp.onkeydown=function(e){if(e.key===''Enter''){e.preventDefault();send(null);}};',
-'var QA={qaV:''Top 10 productos mas vendidos del mes actual'',',
+'var QA={qaV:''Como van mis ventas del mes actual'',',
 'qaK:''Articulos con stock critico o en cero'',',
-'qaP:''Promociones vigentes activas hoy'',qaC:''Clientes sin compra en los ultimos 60 dias''};',
+'qaP:''Clientes que no compran hace mas de 60 dias'',qaC:''Que puedo vender hoy con alta demanda y stock disponible''};',
 'Object.keys(QA).forEach(function(id){var el=d.getElementById(id);if(el)el.onclick=function(){send(QA[id]);};});',
+'window._aiApp=app;window._aiGetC=getC;window._aiSend=send;',
+'})();'
+))
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(209900000000005233)
+ ,p_event_id=>wwv_flow_imp.id(209900000000002233)
+,p_event_result=>'TRUE'
+,p_action_sequence=>15
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'(function(){',
+'function mkB(t){return ''<button onclick="if(window._aiSend)window._aiSend(this.innerText)" style="display:inline-block;margin:2px 4px 2px 0;padding:4px 10px;border-radius:12px;border:1px solid #0572c6;color:#0572c6;background:#fff;cursor:pointer;font-size:11px">''+t+''</button>'';}',
+'function getSug(){var s='''';',
+'s+=''<div style="margin:5px 0"><b>&#128202; Ventas:</b><br>''+mkB(''&iquest;C&oacute;mo voy hoy?'')+mkB(''&iquest;Cu&aacute;nto vend&iacute; este mes?'')+mkB(''&iquest;Estoy mejor que el mes pasado?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#128230; Productos:</b><br>''+mkB(''&iquest;Qu&eacute; productos puedo vender m&aacute;s hoy?'')+mkB(''&iquest;Cu&aacute;les son los m&aacute;s vendidos?'')+mkB(''&iquest;Qu&eacute; productos tienen bajo stock?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#129485; Clientes:</b><br>''+mkB(''&iquest;Qu&eacute; clientes compran m&aacute;s?'')+mkB(''&iquest;Qu&eacute; clientes est&aacute;n inactivos?'')+mkB(''&iquest;A qui&eacute;n deber&iacute;a visitar hoy?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#127919; Oportunidades:</b><br>''+mkB(''&iquest;D&oacute;nde tengo oportunidades de venta?'')+mkB(''&iquest;Qu&eacute; puedo vender r&aacute;pido hoy?'')+mkB(''&iquest;Qu&eacute; productos tienen alta demanda y stock disponible?'')+''</div>'';',
+'return s;}',
+'function greet(){',
+'var cod=null;try{cod=apex.item(''P_COD_EMPRESA'').getValue();}catch(e){}',
+'var ven=null;try{ven=apex.item(''P_COD_VENDEDOR'').getValue();}catch(e){}',
+'var emp=null;try{emp=apex.item(''P_COD_EMPLEADO'').getValue();}catch(e){}',
+'var otros=null;try{otros=apex.item(''P_VER_OTROS_VENDEDORES'').getValue();}catch(e){}',
+'var FB=''<b>Hola &APP_USER. &#128075;</b><br><br><b>&#128172; &iquest;Qu&eacute; quer&eacute;s consultar hoy?</b>''+getSug();',
+'fetch(''http://10.100.13.110:8010/greet'',{method:''POST'',headers:{''Content-Type'':''application/json''},',
+'body:JSON.stringify({usuario:''&APP_USER.'',contexto:{cod_empresa:cod,cod_vendedor:ven,cod_empleado:emp,ver_otros_vendedores:otros}})})',
+'.then(function(r){return r.json();})',
+'.then(function(j){if(window._aiApp)window._aiApp(''assistant'',(j&&j.respuesta)?j.respuesta:FB);})',
+'.catch(function(){if(window._aiApp)window._aiApp(''assistant'',FB);});}',
+'window._aiGreet=greet;',
+'if(window._aiGetC&&!window._aiGetC().length)greet();',
 '})();'
 ))
 );
