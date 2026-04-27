@@ -1,4 +1,4 @@
-﻿prompt --application/set_environment
+prompt --application/set_environment
 set define off verify off feedback off
 whenever sqlerror exit sql.sqlcode rollback
 --------------------------------------------------------------------------------
@@ -28,7 +28,7 @@ prompt APPLICATION 122 - Kairos
 -- Application Export:
 --   Application:     122
 --   Name:            Kairos
---   Date and Time:   16:16 Wednesday April 22, 2026
+--   Date and Time:   11:38 Monday April 27, 2026
 --   Exported By:     NZARATE
 --   Flashback:       0
 --   Export Type:     Page Export
@@ -36,7 +36,7 @@ prompt APPLICATION 122 - Kairos
 --     PAGE: 233
 --   Manifest End
 --   Version:         22.1.0
---   Instance ID:     203712190362964
+--   Instance ID:     69411747885904
 --
 
 begin
@@ -61,7 +61,7 @@ wwv_flow_imp_page.create_page(
 ,p_protection_level=>'C'
 ,p_page_component_map=>'18'
 ,p_last_updated_by=>'NZARATE'
-,p_last_upd_yyyymmddhh24miss=>'20260325083056'
+,p_last_upd_yyyymmddhh24miss=>'20260427113644'
 );
 wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(56079088945779729)
@@ -540,6 +540,18 @@ wwv_flow_imp_page.create_worksheet_condition(
 ,p_column_font_color=>'#000000'
 );
 wwv_flow_imp_page.create_page_plug(
+ p_id=>wwv_flow_imp.id(209900000000000233)
+,p_plug_name=>'Agente IA Comercial'
+,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
+,p_plug_template=>wwv_flow_imp.id(40108275410263656)
+,p_plug_display_sequence=>15
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_source=>'<p style="color:#888;font-size:13px;margin:0;">Agente IA disponible en el bot&#243;n flotante (esquina inferior derecha).</p>'
+,p_attribute_01=>'N'
+,p_attribute_02=>'TEXT'
+,p_attribute_03=>'Y'
+);
+wwv_flow_imp_page.create_page_plug(
  p_id=>wwv_flow_imp.id(263386391525028467)
 ,p_plug_name=>'Filtro'
 ,p_region_template_options=>'#DEFAULT#:is-collapsed:t-Region--scrollBody'
@@ -549,15 +561,6 @@ wwv_flow_imp_page.create_page_plug(
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_attribute_01=>'N'
 ,p_attribute_02=>'HTML'
-);
-wwv_flow_imp_page.create_page_plug(
- p_id=>wwv_flow_imp.id(209900000000000233)
-,p_plug_name=>'Agente IA Comercial'
-,p_region_template_options=>'#DEFAULT#:t-Region--scrollBody'
-,p_plug_template=>wwv_flow_imp.id(40108275410263656)
-,p_plug_display_sequence=>15
-,p_include_in_reg_disp_sel_yn=>'Y'
-,p_plug_source=>'<p style="color:#888;font-size:13px;margin:0;">Agente IA disponible en el bot&#243;n flotante (esquina inferior derecha).</p>'
 );
 wwv_flow_imp_page.create_page_button(
  p_id=>wwv_flow_imp.id(225196118135271925)
@@ -689,6 +692,50 @@ wwv_flow_imp_page.create_page_item(
 ,p_attribute_01=>'Y'
 );
 wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(655961883370676921)
+,p_name=>'P233_COD_VENDEDOR_PAG0'
+,p_item_sequence=>140
+,p_item_plug_id=>wwv_flow_imp.id(263386391525028467)
+,p_source=>'&P_COD_VENDEDOR.'
+,p_source_type=>'STATIC'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_encrypt_session_state_yn=>'N'
+,p_attribute_01=>'N'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(655961989560676922)
+,p_name=>'P233_COD_EMPRESA'
+,p_item_sequence=>150
+,p_item_plug_id=>wwv_flow_imp.id(263386391525028467)
+,p_source=>'&P_COD_EMPRESA.'
+,p_source_type=>'STATIC'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_encrypt_session_state_yn=>'N'
+,p_attribute_01=>'N'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(655962034908676923)
+,p_name=>'P233_COD_EMPLEADO'
+,p_item_sequence=>160
+,p_item_plug_id=>wwv_flow_imp.id(263386391525028467)
+,p_source=>'&P_COD_EMPLEADO.'
+,p_source_type=>'STATIC'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_encrypt_session_state_yn=>'N'
+,p_attribute_01=>'N'
+);
+wwv_flow_imp_page.create_page_item(
+ p_id=>wwv_flow_imp.id(655962035000000001)
+,p_name=>'P233_VER_OTROS_VENDEDORES'
+,p_item_sequence=>165
+,p_item_plug_id=>wwv_flow_imp.id(263386391525028467)
+,p_source=>'&P_VER_OTROS_VENDEDORES.'
+,p_source_type=>'STATIC'
+,p_display_as=>'NATIVE_HIDDEN'
+,p_encrypt_session_state_yn=>'N'
+,p_attribute_01=>'N'
+);
+wwv_flow_imp_page.create_page_item(
  p_id=>wwv_flow_imp.id(815771915839065949)
 ,p_name=>'P233_IMPRIMIR'
 ,p_item_sequence=>110
@@ -768,129 +815,6 @@ wwv_flow_imp_page.create_page_da_event(
 ,p_bind_type=>'bind'
 ,p_bind_event_type=>'change'
 );
-wwv_flow_imp_page.create_page_da_event(
- p_id=>wwv_flow_imp.id(209900000000002233)
-,p_name=>'INIT_AI_CHAT'
-,p_event_sequence=>40
-,p_bind_type=>'bind'
-,p_bind_event_type=>'ready'
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(209900000000003233)
- ,p_event_id=>wwv_flow_imp.id(209900000000002233)
-,p_event_result=>'TRUE'
-,p_action_sequence=>5
-,p_execute_on_page_init=>'Y'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'(function(){var W=document.createElement(''div'');',
-'W.innerHTML=''<div id=aiBtn_233 style="position:fixed;bottom:24px;right:24px;z-index:9999;width:54px;height:54px;border-radius:50%;background:#0572c6;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35);font-size:26px;" title="Agente IA">&#128172;</div>''',
-' +''<div id=aiPan_233 style="display:none;position:fixed;bottom:88px;right:24px;z-index:9998;width:520px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.3);overflow:hidden;background:#fff;">''',
-' +''<div style="background:#0572c6;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;"><b>Agente Comercial IA</b>''',
-' +''<div style="display:flex;gap:8px;align-items:center;"><span id=aiClear_233 style="cursor:pointer;font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.5);">Vaciar</span>''',
-' +''<span id=aiX_233 style="cursor:pointer;font-size:20px;">&times;</span></div></div>''',
-' +''<div id=aiQA_233 style="background:#e8f0fe;padding:5px 10px;display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid #d0d8f0;">''',
-' +''<button id=qaV style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128202; Mis Ventas</button>''',
-' +''<button id=qaK style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128230; Stock Critico</button>''',
-' +''<button id=qaP style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128100; Inactivos</button>''',
-' +''<button id=qaC style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#127919; Oportunidades</button></div>''',
-' +''<div id=aiH_233 style="height:390px;overflow-y:auto;padding:12px;background:#f4f6f8;"></div>''',
-' +''<div id=aiCSV_233 style="display:none;padding:3px 10px;background:#fff;text-align:right;border-top:1px solid #eee;"><a id=aiCSVLnk href=# style="font-size:11px;color:#0572c6;">&darr; Exportar XLS</a></div>''',
-' +''<div style="display:flex;gap:6px;padding:10px;background:#fff;border-top:1px solid #ddd;">''',
-' +''<input id=aiI_233 type=text placeholder="Escribe tu pregunta..." style="flex:1;padding:8px 11px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-transform:uppercase;">''',
-' +''<button id=aiS_233 type=button style="padding:8px 14px;background:#0572c6;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:13px;">Enviar</button>''',
-' +''</div></div>'';',
-'document.body.appendChild(W);})();'
-))
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(209900000000004233)
- ,p_event_id=>wwv_flow_imp.id(209900000000002233)
-,p_event_result=>'TRUE'
-,p_action_sequence=>10
-,p_execute_on_page_init=>'Y'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'(function(){',
-'var d=document,SK=''AI_CTX_233'',API=''http://10.100.13.110:8010/chat'',lastDatos=null,B,P,inp,btn,CSV,lnk;',
-'function esc(s){return(s||'''').replace(/&/g,''&amp;'').replace(/</g,''&lt;'').replace(/>/g,''&gt;'');}',
-'function getC(){try{return JSON.parse(sessionStorage.getItem(SK)||''[]'');}catch(e){return[];}}',
-'function setC(c){try{sessionStorage.setItem(SK,JSON.stringify(c));}catch(e){}}',
-'function render(){var el=d.getElementById(''aiH_233'');if(!el)return;var c=getC(),h=[];',
-'for(var i=0;i<c.length;i++){var m=c[i],u=m.role===''user'';',
-'h.push(''<div style="margin:5px 0;padding:9px 12px;border-radius:10px;max-width:90%;background:''+(u?''#0572c6'':''#fff'')+'';color:''+(u?''#fff'':''#333'')+'';white-space:pre-line;''+(u?''margin-left:auto;text-align:right;'':'''')+''">''+(u?esc(m.content):m.content)+''</div>'');',
-'}el.innerHTML=h.join('''');el.scrollTop=el.scrollHeight;}',
-'function clearChat(){if(confirm(''Vaciar la conversacion?'')){setC([]);lastDatos=null;CSV.style.display=''none'';render();if(window._aiGreet)window._aiGreet();}}',
-'function app(r,c){var x=getC();x.push({role:r,content:c});setC(x);render();}',
-'function doExcel(){if(!lastDatos||!lastDatos.filas||!lastDatos.filas.length)return;',
-'var cols=lastDatos.columnas||Object.keys(lastDatos.filas[0]);',
-'var html=''<table><tr>''+cols.map(function(c){return''<th>''+c+''</th>'';}).join('''')+''</tr>'';',
-'lastDatos.filas.forEach(function(r){html+=''<tr>''+cols.map(function(c){return''<td>''+String(r[c]||'''')+''</td>'';}).join('''')+''</tr>'';});',
-'html+=''</table>'';',
-'if(lnk){lnk.href=''data:application/vnd.ms-excel,''+encodeURIComponent(html);lnk.download=''datos.xls'';}}',
-'function send(m){',
-'if(!m){if(!inp)return;m=(inp.value||'''').trim();if(!m)return;inp.value='''';}',
-'m=m.toUpperCase();var hist=getC().slice(-6);app(''user'',m);',
-'if(btn){btn.disabled=true;btn.textContent=''...'';}',
-'var cod=null;try{cod=apex.item(''P_COD_EMPRESA'').getValue();}catch(e){}',
-'var ven=null;try{ven=apex.item(''P_COD_VENDEDOR'').getValue();}catch(e){}',
-'var otros=null;try{otros=apex.item(''P_VER_OTROS_VENDEDORES'').getValue();}catch(e){}',
-'fetch(API,{method:''POST'',headers:{''Content-Type'':''application/json''},',
-'body:JSON.stringify({mensaje:m,usuario:''&APP_USER.'',contexto:{cod_empresa:cod,cod_vendedor:ven,ver_otros_vendedores:otros,periodo:''mes''},historial:hist})})',
-'.then(function(r){if(!r.ok)throw r.status;return r.json();})',
-'.then(function(j){app(''assistant'',j&&j.respuesta?j.respuesta:''Sin respuesta.'');',
-'if(j&&j.datos&&j.datos.filas&&j.datos.filas.length){lastDatos=j.datos;doExcel();CSV.style.display=''block'';}',
-'else{lastDatos=null;CSV.style.display=''none'';}}).catch(function(){app(''assistant'',''Error al conectar con el agente IA.'');})',
-'.finally(function(){if(btn){btn.disabled=false;btn.textContent=''Enviar'';}});}',
-'B=d.getElementById(''aiBtn_233'');P=d.getElementById(''aiPan_233'');',
-'inp=d.getElementById(''aiI_233'');btn=d.getElementById(''aiS_233'');',
-'CSV=d.getElementById(''aiCSV_233'');lnk=d.getElementById(''aiCSVLnk'');',
-'if(B)B.onclick=function(){P.style.display=P.style.display===''none''?''block'':''none'';',
-'if(P.style.display===''block''){render();setTimeout(function(){inp.focus();},100);}};',
-'d.getElementById(''aiX_233'').onclick=function(){P.style.display=''none'';};',
-'d.getElementById(''aiClear_233'').onclick=clearChat;',
-'btn.onclick=function(){send(null);};',
-'inp.onkeydown=function(e){if(e.key===''Enter''){e.preventDefault();send(null);}};',
-'var QA={qaV:''Como van mis ventas del mes actual'',',
-'qaK:''Articulos con stock critico o en cero'',',
-'qaP:''Clientes que no compran hace mas de 60 dias'',qaC:''Que puedo vender hoy con alta demanda y stock disponible''};',
-'Object.keys(QA).forEach(function(id){var el=d.getElementById(id);if(el)el.onclick=function(){send(QA[id]);};});',
-'window._aiApp=app;window._aiGetC=getC;window._aiSend=send;',
-'})();'
-))
-);
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(209900000000005233)
- ,p_event_id=>wwv_flow_imp.id(209900000000002233)
-,p_event_result=>'TRUE'
-,p_action_sequence=>15
-,p_execute_on_page_init=>'Y'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'(function(){',
-'function mkB(t){return ''<button onclick="if(window._aiSend)window._aiSend(this.innerText)" style="display:inline-block;margin:2px 4px 2px 0;padding:4px 10px;border-radius:12px;border:1px solid #0572c6;color:#0572c6;background:#fff;cursor:pointer;font-size:11px">''+t+''</button>'';}',
-'function getSug(){var s='''';',
-'s+=''<div style="margin:5px 0"><b>&#128202; Ventas:</b><br>''+mkB(''&iquest;C&oacute;mo voy hoy?'')+mkB(''&iquest;Cu&aacute;nto vend&iacute; este mes?'')+mkB(''&iquest;Estoy mejor que el mes pasado?'')+''</div>'';',
-'s+=''<div style="margin:5px 0"><b>&#128230; Productos:</b><br>''+mkB(''&iquest;Qu&eacute; productos puedo vender m&aacute;s hoy?'')+mkB(''&iquest;Cu&aacute;les son los m&aacute;s vendidos?'')+mkB(''&iquest;Qu&eacute; productos tienen bajo stock?'')+''</div>'';',
-'s+=''<div style="margin:5px 0"><b>&#129485; Clientes:</b><br>''+mkB(''&iquest;Qu&eacute; clientes compran m&aacute;s?'')+mkB(''&iquest;Qu&eacute; clientes est&aacute;n inactivos?'')+mkB(''&iquest;A qui&eacute;n deber&iacute;a visitar hoy?'')+''</div>'';',
-'s+=''<div style="margin:5px 0"><b>&#127919; Oportunidades:</b><br>''+mkB(''&iquest;D&oacute;nde tengo oportunidades de venta?'')+mkB(''&iquest;Qu&eacute; puedo vender r&aacute;pido hoy?'')+mkB(''&iquest;Qu&eacute; productos tienen alta demanda y stock disponible?'')+''</div>'';',
-'return s;}',
-'function greet(){',
-'var cod=null;try{cod=apex.item(''P_COD_EMPRESA'').getValue();}catch(e){}',
-'var ven=null;try{ven=apex.item(''P_COD_VENDEDOR'').getValue();}catch(e){}',
-'var emp=null;try{emp=apex.item(''P_COD_EMPLEADO'').getValue();}catch(e){}',
-'var otros=null;try{otros=apex.item(''P_VER_OTROS_VENDEDORES'').getValue();}catch(e){}',
-'var FB=''<b>Hola &APP_USER. &#128075;</b><br><br><b>&#128172; &iquest;Qu&eacute; quer&eacute;s consultar hoy?</b>''+getSug();',
-'fetch(''http://10.100.13.110:8010/greet'',{method:''POST'',headers:{''Content-Type'':''application/json''},',
-'body:JSON.stringify({usuario:''&APP_USER.'',contexto:{cod_empresa:cod,cod_vendedor:ven,cod_empleado:emp,ver_otros_vendedores:otros}})})',
-'.then(function(r){return r.json();})',
-'.then(function(j){if(window._aiApp)window._aiApp(''assistant'',(j&&j.respuesta)?j.respuesta:FB);})',
-'.catch(function(){if(window._aiApp)window._aiApp(''assistant'',FB);});}',
-'window._aiGreet=greet;',
-'if(window._aiGetC&&!window._aiGetC().length)greet();',
-'})();'
-))
-);
 wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(842565059099550001)
 ,p_event_id=>wwv_flow_imp.id(815772037975065950)
@@ -944,12 +868,153 @@ wwv_flow_imp_page.create_page_da_action(
 '',
 ''))
 );
+wwv_flow_imp_page.create_page_da_event(
+ p_id=>wwv_flow_imp.id(209900000000002233)
+,p_name=>'INIT_AI_CHAT'
+,p_event_sequence=>40
+,p_bind_type=>'bind'
+,p_bind_event_type=>'ready'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(655962184612676924)
+,p_event_id=>wwv_flow_imp.id(209900000000002233)
+,p_event_result=>'TRUE'
+,p_action_sequence=>10
+,p_execute_on_page_init=>'N'
+,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'  :P233_COD_VENDEDOR_PAG0 := :P_COD_VENDEDOR;',
+'  :P233_COD_EMPRESA := :P_COD_EMPRESA;',
+'  :P233_COD_EMPLEADO := :P_COD_EMPLEADO;',
+'  :P233_VER_OTROS_VENDEDORES := :P_VER_OTROS_VENDEDORES;',
+''))
+,p_attribute_02=>'P_COD_EMPRESA,P_COD_EMPLEADO,P_VER_OTROS_VENDEDORES'
+,p_attribute_03=>'P233_COD_VENDEDOR_PAG0,P233_COD_EMPRESA,P233_COD_EMPLEADO,P233_VER_OTROS_VENDEDORES'
+,p_attribute_04=>'N'
+,p_attribute_05=>'PLSQL'
+,p_wait_for_result=>'Y'
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(209900000000003233)
+,p_event_id=>wwv_flow_imp.id(209900000000002233)
+,p_event_result=>'TRUE'
+,p_action_sequence=>20
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'(function(){var W=document.createElement(''div'');',
+'W.innerHTML=''<div id=aiBtn_233 style="position:fixed;bottom:24px;right:24px;z-index:9999;width:54px;height:54px;border-radius:50%;background:#0572c6;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16p'
+||'x rgba(0,0,0,.35);font-size:26px;" title="Agente IA">&#128172;</div>''',
+' +''<div id=aiPan_233 style="display:none;position:fixed;bottom:88px;right:24px;z-index:9998;width:520px;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.3);overflow:hidden;background:#fff;">''',
+' +''<div style="background:#0572c6;color:#fff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;"><b>Agente Comercial IA</b>''',
+' +''<div style="display:flex;gap:8px;align-items:center;"><span id=aiClear_233 style="cursor:pointer;font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,255,255,.5);">Vaciar</span>''',
+' +''<span id=aiX_233 style="cursor:pointer;font-size:20px;">&times;</span></div></div>''',
+' +''<div id=aiQA_233 style="background:#e8f0fe;padding:5px 10px;display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid #d0d8f0;">''',
+' +''<button id=qaV style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128202; Mis Ventas</button>''',
+' +''<button id=qaK style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128230; Stock Critico</button>''',
+' +''<button id=qaP style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#128100; Inactivos</button>''',
+' +''<button id=qaC style="font-size:11px;padding:2px 7px;border-radius:3px;border:0;background:#fff;cursor:pointer;">&#127919; Oportunidades</button></div>''',
+' +''<div id=aiH_233 style="height:390px;overflow-y:auto;padding:12px;background:#f4f6f8;"></div>''',
+' +''<div id=aiCSV_233 style="display:none;padding:3px 10px;background:#fff;text-align:right;border-top:1px solid #eee;"><a id=aiCSVLnk href=# style="font-size:11px;color:#0572c6;">&darr; Exportar XLS</a></div>''',
+' +''<div style="display:flex;gap:6px;padding:10px;background:#fff;border-top:1px solid #ddd;">''',
+' +''<input id=aiI_233 type=text placeholder="Escribe tu pregunta..." style="flex:1;padding:8px 11px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-transform:uppercase;">''',
+' +''<button id=aiS_233 type=button style="padding:8px 14px;background:#0572c6;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:13px;">Enviar</button>''',
+' +''</div></div>'';',
+'document.body.appendChild(W);})();'))
+);
+end;
+/
+begin
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(209900000000004233)
+,p_event_id=>wwv_flow_imp.id(209900000000002233)
+,p_event_result=>'TRUE'
+,p_action_sequence=>30
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'(function(){',
+'var d=document,SK=''AI_CTX_233'',API=''http://10.100.13.110:8010/chat'',lastDatos=null,B,P,inp,btn,CSV,lnk;',
+'function esc(s){return(s||'''').replace(/&/g,''&amp;'').replace(/</g,''&lt;'').replace(/>/g,''&gt;'');}',
+'function getC(){try{return JSON.parse(sessionStorage.getItem(SK)||''[]'');}catch(e){return[];}}',
+'function setC(c){try{sessionStorage.setItem(SK,JSON.stringify(c));}catch(e){}}',
+'function render(){var el=d.getElementById(''aiH_233'');if(!el)return;var c=getC(),h=[];',
+'for(var i=0;i<c.length;i++){var m=c[i],u=m.role===''user'';',
+'h.push(''<div style="margin:5px 0;padding:9px 12px;border-radius:10px;max-width:90%;background:''+(u?''#0572c6'':''#fff'')+'';color:''+(u?''#fff'':''#333'')+'';white-space:pre-line;''+(u?''margin-left:auto;text-align:right;'':'''')+''">''+(u?esc(m.content):m.content)+''<'
+||'/div>'');',
+'}el.innerHTML=h.join('''');el.scrollTop=el.scrollHeight;}',
+'function clearChat(){if(confirm(''Vaciar la conversacion?'')){setC([]);lastDatos=null;CSV.style.display=''none'';render();if(window._aiGreet)window._aiGreet();}}',
+'function app(r,c){var x=getC();x.push({role:r,content:c});setC(x);render();}',
+'function doExcel(){if(!lastDatos||!lastDatos.filas||!lastDatos.filas.length)return;',
+'var cols=lastDatos.columnas||Object.keys(lastDatos.filas[0]);',
+'var html=''<table><tr>''+cols.map(function(c){return''<th>''+c+''</th>'';}).join('''')+''</tr>'';',
+'lastDatos.filas.forEach(function(r){html+=''<tr>''+cols.map(function(c){return''<td>''+String(r[c]||'''')+''</td>'';}).join('''')+''</tr>'';});',
+'html+=''</table>'';',
+'if(lnk){lnk.href=''data:application/vnd.ms-excel,''+encodeURIComponent(html);lnk.download=''datos.xls'';}}',
+'function send(m){',
+'if(!m){if(!inp)return;m=(inp.value||'''').trim();if(!m)return;inp.value='''';}',
+'m=m.toUpperCase();var hist=getC().slice(-6);app(''user'',m);',
+'if(btn){btn.disabled=true;btn.textContent=''...'';}',
+'var _c={cod_empresa:apex.item(''P233_COD_EMPRESA'').getValue(),cod_vendedor:apex.item(''P233_COD_VENDEDOR_PAG0'').getValue(),ver_otros_vendedores:apex.item(''P233_VER_OTROS_VENDEDORES'').getValue(),periodo:''mes''};',
+'fetch(API,{method:''POST'',headers:{''Content-Type'':''application/json''},',
+'body:JSON.stringify({mensaje:m,usuario:''&APP_USER.'',contexto:_c,historial:hist})})',
+'.then(function(r){if(!r.ok)throw r.status;return r.json();})',
+'.then(function(j){app(''assistant'',j&&j.respuesta?j.respuesta:''Sin respuesta.'');',
+'if(j&&j.datos&&j.datos.filas&&j.datos.filas.length){lastDatos=j.datos;doExcel();CSV.style.display=''block'';}',
+'else{lastDatos=null;CSV.style.display=''none'';}}).catch(function(){app(''assistant'',''Error al conectar con el agente IA.'');})',
+'.finally(function(){if(btn){btn.disabled=false;btn.textContent=''Enviar'';}});}',
+'B=d.getElementById(''aiBtn_233'');P=d.getElementById(''aiPan_233'');',
+'inp=d.getElementById(''aiI_233'');btn=d.getElementById(''aiS_233'');',
+'CSV=d.getElementById(''aiCSV_233'');lnk=d.getElementById(''aiCSVLnk'');',
+'if(B)B.onclick=function(){P.style.display=P.style.display===''none''?''block'':''none'';',
+'if(P.style.display===''block''){render();setTimeout(function(){inp.focus();},100);}};',
+'d.getElementById(''aiX_233'').onclick=function(){P.style.display=''none'';};',
+'d.getElementById(''aiClear_233'').onclick=clearChat;',
+'btn.onclick=function(){send(null);};',
+'inp.onkeydown=function(e){if(e.key===''Enter''){e.preventDefault();send(null);}};',
+'var QA={qaV:''Como van mis ventas del mes actual'',',
+'qaK:''Articulos con stock critico o en cero'',',
+'qaP:''Clientes que no compran hace mas de 60 dias'',qaC:''Que puedo vender hoy con alta demanda y stock disponible''};',
+'Object.keys(QA).forEach(function(id){var el=d.getElementById(id);if(el)el.onclick=function(){send(QA[id]);};});',
+'window._aiApp=app;window._aiGetC=getC;window._aiSend=send;',
+'})();'))
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(209900000000005233)
+,p_event_id=>wwv_flow_imp.id(209900000000002233)
+,p_event_result=>'TRUE'
+,p_action_sequence=>40
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'(function(){',
+'function mkB(t){return ''<button onclick="if(window._aiSend)window._aiSend(this.innerText)" style="display:inline-block;margin:2px 4px 2px 0;padding:4px 10px;border-radius:12px;border:1px solid #0572c6;color:#0572c6;background:#fff;cursor:pointer;font'
+||'-size:11px">''+t+''</button>'';}',
+'function getSug(){var s='''';',
+'s+=''<div style="margin:5px 0"><b>&#128202; Ventas:</b><br>''+mkB(''&iquest;C&oacute;mo voy hoy?'')+mkB(''&iquest;Cu&aacute;nto vend&iacute; este mes?'')+mkB(''&iquest;Estoy mejor que el mes pasado?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#128230; Productos:</b><br>''+mkB(''&iquest;Qu&eacute; productos puedo vender m&aacute;s hoy?'')+mkB(''&iquest;Cu&aacute;les son los m&aacute;s vendidos?'')+mkB(''&iquest;Qu&eacute; productos tienen bajo stock?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#129485; Clientes:</b><br>''+mkB(''&iquest;Qu&eacute; clientes compran m&aacute;s?'')+mkB(''&iquest;Qu&eacute; clientes est&aacute;n inactivos?'')+mkB(''&iquest;A qui&eacute;n deber&iacute;a visitar hoy?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#127919; Oportunidades:</b><br>''+mkB(''&iquest;D&oacute;nde tengo oportunidades de venta?'')+mkB(''&iquest;Qu&eacute; puedo vender r&aacute;pido hoy?'')+mkB(''&iquest;Qu&eacute; productos tienen alta demanda y stock dispo'
+||'nible?'')+''</div>'';',
+'return s;}',
+'function greet(){',
+'var FB=''<b>Hola &#128075;</b><br><br><b>&#128172; &iquest;Qu&eacute; quer&eacute;s consultar hoy?</b>''+getSug();',
+'var _c={cod_empresa:apex.item(''P233_COD_EMPRESA'').getValue(),cod_vendedor:apex.item(''P233_COD_VENDEDOR_PAG0'').getValue(),cod_empleado:apex.item(''P233_COD_EMPLEADO'').getValue(),ver_otros_vendedores:apex.item(''P233_VER_OTROS_VENDEDORES'').getValue()};',
+'fetch(''http://10.100.13.110:8010/greet'',{method:''POST'',headers:{''Content-Type'':''application/json''},',
+'body:JSON.stringify({usuario:''&APP_USER.'',contexto:_c})})',
+'.then(function(r){return r.json();})',
+'.then(function(j){if(window._aiApp)window._aiApp(''assistant'',(j&&j.respuesta)?j.respuesta:FB);})',
+'.catch(function(){if(window._aiApp)window._aiApp(''assistant'',FB);});}',
+'window._aiGreet=greet;',
+'if(window._aiGetC&&!window._aiGetC().length)greet();',
+'})();'))
+);
 wwv_flow_imp_page.create_page_process(
  p_id=>wwv_flow_imp.id(1152814384058848426)
 ,p_process_sequence=>10
 ,p_process_point=>'BEFORE_HEADER'
 ,p_process_type=>'NATIVE_PLSQL'
-,p_process_name=>'New'
+,p_process_name=>'innit'
 ,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'BEGIN',
 '  IF :P233_FECHA_INICIO IS NULL THEN',
@@ -958,6 +1023,10 @@ wwv_flow_imp_page.create_page_process(
 '  IF :P233_FECHA_FIN IS NULL THEN',
 '    :P233_FECHA_FIN := TO_CHAR(SYSDATE, ''DD/MM/YYYY'');',
 '  END IF;',
+'  :P233_COD_VENDEDOR_PAG0 := :P_COD_VENDEDOR;',
+'  :P233_COD_EMPRESA := :P_COD_EMPRESA;',
+'  :P233_COD_EMPLEADO := :P_COD_EMPLEADO;',
+'  :P233_VER_OTROS_VENDEDORES := :P_VER_OTROS_VENDEDORES;',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 );

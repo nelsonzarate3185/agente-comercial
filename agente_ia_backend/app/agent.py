@@ -7,6 +7,7 @@ Flujo:
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -23,6 +24,49 @@ class AgentResult:
     respuesta: str
     sql_generado: str | None
     datos: dict[str, Any] | None
+
+
+def _inject_vendor_filter(sql: str, cod_vendedor: str, params: dict) -> tuple[str, dict]:
+    """Garantiza AND COD_VENDEDOR = :P_COD_VENDEDOR si el LLM lo omitió."""
+    sql_upper = sql.upper()
+
+    # Ya tiene el filtro — solo asegurar el parámetro
+    if "P_COD_VENDEDOR" in sql_upper:
+        if "P_COD_VENDEDOR" not in params:
+            params["P_COD_VENDEDOR"] = cod_vendedor
+        return sql, params
+
+    # No aplica a este SQL (no usa las vistas de ventas/clientes)
+    if "V_VENTAS_APEX" not in sql_upper and "V_CLIENTE_APEX" not in sql_upper:
+        return sql, params
+
+    # Buscar la primera cláusula de nivel superior (profundidad 0 de paréntesis)
+    # para insertar el filtro justo antes
+    depth = 0
+    pos_insert = None
+    kw = re.compile(r"GROUP\s+BY|ORDER\s+BY|FETCH\s+FIRST|HAVING", re.IGNORECASE)
+    i = 0
+    while i < len(sql):
+        c = sql[i]
+        if c == "(":
+            depth += 1
+        elif c == ")":
+            depth -= 1
+        elif depth == 0:
+            m = kw.match(sql, i)
+            if m:
+                pos_insert = i
+                break
+        i += 1
+
+    if pos_insert is not None:
+        sql = sql[:pos_insert].rstrip() + " AND COD_VENDEDOR = :P_COD_VENDEDOR " + sql[pos_insert:]
+    else:
+        sql = sql.rstrip().rstrip(";") + " AND COD_VENDEDOR = :P_COD_VENDEDOR"
+
+    params["P_COD_VENDEDOR"] = cod_vendedor
+    log.warning("VENDOR_FILTER | LLM omitió el filtro de vendedor — forzado por backend")
+    return sql, params
 
 
 def handle_chat(
@@ -72,11 +116,12 @@ def handle_chat(
     # ── 3. Validar SQL — sólo SELECT, sin palabras peligrosas ───────────────
     validate_select_only(sql)
 
-    # ── 4. Inyectar parámetros del contexto si el LLM los referenció ────────
+    # ── 4. Inyectar parámetros del contexto ──────────────────────────────────
     if ctx.get("cod_empresa") and ":cod_empresa" in sql and "cod_empresa" not in params:
         params["cod_empresa"] = str(ctx["cod_empresa"])
-    if ctx.get("cod_vendedor") and ":cod_vendedor" in sql and "cod_vendedor" not in params:
-        params["cod_vendedor"] = str(ctx["cod_vendedor"])
+    # Enforcement: fuerza el filtro de vendedor aunque el LLM lo haya omitido
+    if ctx.get("cod_vendedor"):
+        sql, params = _inject_vendor_filter(sql, str(ctx["cod_vendedor"]), params)
 
     # ── 5. Ejecutar contra Oracle ────────────────────────────────────────────
     max_rows = min(int(ctx.get("max_rows") or settings.max_rows), 50)
@@ -135,21 +180,26 @@ def handle_greet(
     # 1. Resolver nombre del empleado
     nombre: str | None = None
 
-    # Estrategia A: NOMBRE_APELLIDO desde V_EMPLEADOS usando P_COD_EMPLEADO (página 0)
+    # Estrategia A: NVL(NOMBRE_APELLIDO, NOMBRE) desde V_EMPLEADOS usando P_COD_EMPLEADO (página 0)
     cod_empleado = str(ctx.get("cod_empleado") or "").strip()
+    log.info("GREET | usuario=%s cod_empleado=%r cod_vendedor=%r", usuario, cod_empleado, cod_vendedor)
     if cod_empleado:
         try:
             r = db.query(
-                "SELECT NOMBRE FROM INV.V_EMPLEADOS"
+                "SELECT NOMBRE_APELLIDO, NOMBRE FROM INV.V_EMPLEADOS"
                 " WHERE COD_EMPLEADO = :cod_emp AND ROWNUM = 1",
                 {"cod_emp": cod_empleado},
                 max_rows=1,
             )
             if r.rows:
-                val = r.rows[0].get("nombre")
+                # NVL en Python: NOMBRE_APELLIDO primero, luego NOMBRE como fallback
+                val = (
+                    r.rows[0].get("nombre_apellido")
+                    or r.rows[0].get("nombre")
+                )
                 if val and str(val).strip():
                     nombre = str(val).strip().title()
-            log.info("GREET | COD_EMPLEADO=%s → nombre=%s", cod_empleado, nombre)
+            log.info("GREET | COD_EMPLEADO=%s → row=%s → nombre=%s", cod_empleado, r.rows, nombre)
         except Exception as e:
             log.warning("GREET | V_EMPLEADOS error: %s", e)
 
@@ -170,7 +220,7 @@ def handle_greet(
         except Exception as e:
             log.warning("GREET | V_VENTAS_APEX error: %s", e)
 
-    first_name = (nombre.split()[0] if nombre else None) or usuario or "vendedor"
+    nombre_mostrar = nombre or usuario or "vendedor"
 
     # 2. Mini stats — all fail-safe
     ventas_hoy: float | None = None
@@ -236,7 +286,7 @@ def handle_greet(
         stats.append(f"💡 {clientes_inactivos} clientes sin compras en más de 60 días")
 
     html: list[str] = []
-    html.append(f"<b>Hola {first_name} 👋</b><br>")
+    html.append(f"<b>Hola {nombre_mostrar} 👋</b><br>")
     html.append(
         "Soy tu asistente comercial. Te ayudo con "
         "<b>ventas</b>, <b>clientes</b>, <b>stock</b> y <b>oportunidades</b>.<br>"

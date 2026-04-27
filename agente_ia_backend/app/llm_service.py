@@ -64,7 +64,7 @@ REGLAS OBLIGATORIAS — NUNCA las violes:
 11. TIP_COMPROBANTE CRÍTICO — NUNCA uses 'FT'. Los valores correctos son: 'FCR' y 'FCO' para ventas reales, 'NCR' para notas de crédito. Para analizar ventas SIEMPRE filtra: AND TIP_COMPROBANTE IN ('FCR','FCO')
 12. Para filtrar stock por "rubro" o tipo de producto, usa DESC_DIVISION en INV.V_STOCK_APEX. Valores típicos: 'PRODUCTOS', 'REPUESTOS'. DESC_FAMILIA para subfamilia.
 13. Para promociones vigentes: AND FECHA_INICIO <= TRUNC(SYSDATE) AND FECHA_FIN >= TRUNC(SYSDATE). PROMO_MIX='S' son promos mix, 'N' son normales. Filtrar COD_EMPRESA_PROMO = :cod_empresa si está en contexto.
-14. Si el contexto incluye cod_vendedor, SIEMPRE agrega AND COD_VENDEDOR = :cod_vendedor en consultas sobre V_VENTAS_APEX y V_CLIENTE_APEX. Si el usuario menciona el nombre de un vendedor (ej: "vendedor García"), usa UPPER(NOMBRE_VENDEDOR) LIKE UPPER('%'||:nombre_vend||'%') en el WHERE y agrega {{"nombre_vend": "<nombre>"}} a params en lugar de cod_vendedor.
+14. ⛔ RESTRICCIÓN CRÍTICA DE VENDEDOR: Si el contexto incluye cod_vendedor, DEBES agregar AND COD_VENDEDOR = :P_COD_VENDEDOR en TODAS las consultas sobre V_VENTAS_APEX y V_CLIENTE_APEX. Esta restricción es obligatoria e innegociable — garantiza que el vendedor solo vea sus propios datos. Omitirla es un error grave. NO incluyas P_COD_VENDEDOR en el JSON de params, el backend lo inyecta automáticamente. Si el usuario menciona el nombre de un vendedor (ej: "vendedor García"), usa UPPER(NOMBRE_VENDEDOR) LIKE UPPER('%'||:nombre_vend||'%') en el WHERE y agrega {{"nombre_vend": "<nombre>"}} a params.
 15. V_STOCK_APEX tiene una fila por sucursal. Para análisis de stock SIEMPRE agrupa y suma: SELECT COD_ARTICULO, DESC_ARTICULO, SUM(CANT_DISPON) AS CANT_DISPON, SUM(CANT_COMPROMETIDA) AS CANT_COMPROMETIDA FROM INV.V_STOCK_APEX WHERE ... GROUP BY COD_ARTICULO, DESC_ARTICULO (agrega al GROUP BY columnas descriptivas adicionales que necesites). Solo muestra por sucursal si el usuario lo pide explícitamente.
 16. V_STOCK_APEX — SIEMPRE agrega AND COD_RUBRO = 'PR' al WHERE (filtra solo productos comercializables). Ejemplo: WHERE COD_EMPRESA = :cod_empresa AND COD_RUBRO = 'PR'. En el SELECT usa NVL(NULLIF(TRIM(COD_ART_CORTO),''), COD_ARTICULO) AS CODIGO para retornar el código corto del artículo; si está vacío usa COD_ARTICULO como fallback.
 17. V_CLIENTE_APEX — los valores válidos del campo ESTADO son exactamente: 'ACTIVO', 'INACTIVO', 'BLOQUEADO', 'CREDITO BLOQUEADO'. Nunca uses 'A', 'B' ni otros valores. Para clientes activos: ESTADO = 'ACTIVO'. Para bloqueados: ESTADO IN ('BLOQUEADO','CREDITO BLOQUEADO'). Para inactivos: ESTADO = 'INACTIVO'.
@@ -149,7 +149,10 @@ def generate_sql(
     if context.get("cod_empresa"):
         ctx_parts.append(f"cod_empresa='{context['cod_empresa']}'")
     if context.get("cod_vendedor"):
-        ctx_parts.append(f"cod_vendedor='{context['cod_vendedor']}'")
+        ctx_parts.append(
+            "cod_vendedor=:P_COD_VENDEDOR"
+            " [OBLIGATORIO: AND COD_VENDEDOR = :P_COD_VENDEDOR en el WHERE de cada consulta]"
+        )
     if context.get("periodo"):
         ctx_parts.append(f"periodo='{context['periodo']}'")
 
