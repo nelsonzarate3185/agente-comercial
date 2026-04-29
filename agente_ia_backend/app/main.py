@@ -53,24 +53,53 @@ def chat(payload: ChatRequest, _: None = Depends(require_api_key)) -> ChatRespon
         res = handle_chat(payload.mensaje, payload.usuario, payload.contexto, payload.historial)
         return ChatResponse(respuesta=res.respuesta, sql_generado=res.sql_generado, datos=res.datos)
     except oracledb.DatabaseError as e:
-        # Respuesta controlada (sin detalles técnicos) para que APEX pueda mostrar algo útil.
-        msg = (
-            "📊 Resumen:\n"
-            "No pude conectarme a la base Oracle para ejecutar la consulta.\n\n"
-            "📈 Hallazgos clave:\n"
-            "- La conexión a Oracle falló (credenciales o acceso).\n"
-            "- Sin conexión no puedo generar insights confiables.\n\n"
-            "⚠️ Alertas:\n"
-            "Revisar `agente_ia_backend/.env` (ORACLE_USER / ORACLE_PASSWORD) y permisos a las vistas.\n\n"
-            "💡 Recomendaciones:\n"
-            "- Actualizar `ORACLE_PASSWORD` real y reiniciar el backend.\n"
-            "- Verificar que el usuario tenga SELECT sobre `inv.v_ventas_apex`, `inv.v_stock_apex`, `inv.v_cliente_apex`."
-        )
+        err_str = str(e)
         log.exception("Oracle DatabaseError")
+        # ORA-009xx / ORA-004xx = error de SQL generado por el LLM → mensaje accionable
+        if any(code in err_str for code in ("ORA-009", "ORA-004", "ORA-001", "ORA-006")):
+            msg = (
+                "📊 Resumen:\n"
+                "El modelo generó una consulta SQL con un error de sintaxis o columna inválida.\n\n"
+                "📈 Hallazgos clave:\n"
+                f"- Error Oracle: {err_str.splitlines()[0]}\n\n"
+                "⚠️ Alertas:\n"
+                "La consulta no pudo ejecutarse.\n\n"
+                "💡 Recomendaciones:\n"
+                "- Intentá reformular la pregunta con más detalle.\n"
+                "- Ejemplo: en vez de 'stock crítico' probá 'artículos con cantidad disponible menor a 5'."
+            )
+        else:
+            msg = (
+                "📊 Resumen:\n"
+                "No pude conectarme a Oracle para ejecutar la consulta.\n\n"
+                "📈 Hallazgos clave:\n"
+                "- La conexión a Oracle falló (credenciales o red).\n\n"
+                "⚠️ Alertas:\n"
+                "Revisar `.env` (ORACLE_USER / ORACLE_PASSWORD) y permisos sobre las vistas.\n\n"
+                "💡 Recomendaciones:\n"
+                "- Verificar que el usuario tenga SELECT sobre las vistas INV.V_*_APEX."
+            )
         return ChatResponse(
             respuesta=msg,
             sql_generado=None,
             datos={"error": "oracle_database_error"},
+        )
+    except ValueError as e:
+        log.warning("Bind variable faltante: %s", e)
+        return ChatResponse(
+            respuesta=(
+                "📊 Resumen:\n"
+                "El modelo generó una consulta con parámetros incompletos.\n\n"
+                "📈 Hallazgos clave:\n"
+                f"- {e}\n\n"
+                "⚠️ Alertas:\n"
+                "No se pudo ejecutar la consulta de forma segura.\n\n"
+                "💡 Recomendaciones:\n"
+                "- Intentá reformular la pregunta.\n"
+                "- Ejemplo: 'qué compra habitualmente ZEIN SRL' o 'stock disponible para ZEIN SRL'."
+            ),
+            sql_generado=None,
+            datos={"error": "unbound_params"},
         )
     except Exception as e:
         log.exception("Unhandled error in /chat")

@@ -25,9 +25,9 @@ VIEWS: dict[str, dict] = {
             "COD_VENDEDOR":        "VARCHAR2 – Código del vendedor responsable",
             "NOMBRE_VENDEDOR":     "VARCHAR2 – Nombre completo del vendedor",
             "COD_EMPRESA":         "VARCHAR2 – Código de empresa (SIEMPRE filtrar por esto si existe en contexto)",
-            "COD_DIVISION":        "VARCHAR2 – División comercial",
-            "COD_FAMILIA":         "VARCHAR2 – Familia de producto",
-            "COD_CATEGORIA":       "VARCHAR2 – Categoría de producto",
+            "COD_DIVISION":        "VARCHAR2 – División comercial (solo código; DESC_DIVISION NO existe en esta vista, está en V_STOCK_APEX)",
+            "COD_FAMILIA":         "VARCHAR2 – Familia de producto (solo código; DESC_FAMILIA NO existe en esta vista, está en V_STOCK_APEX)",
+            "COD_CATEGORIA":       "VARCHAR2 – Categoría de producto (solo código)",
             "COD_MARCA":           "VARCHAR2 – Código de marca",
             "DESC_MARCA":          "VARCHAR2 – Nombre de la marca",
             "TIP_COMPROBANTE":     "VARCHAR2 – Tipo de comprobante. Ventas reales: 'FCR','FCO'. Notas crédito: 'NCR'. SIEMPRE filtrar solo por ventas: TIP_COMPROBANTE IN ('FCR','FCO'). Nunca usar 'FT'.",
@@ -49,7 +49,7 @@ VIEWS: dict[str, dict] = {
             "DESC_ARTICULO":           "VARCHAR2 – Descripción del artículo",
             "CANT_DISPON":             "NUMBER   – Cantidad disponible en stock (columna clave)",
             "COSTO_PROMEDIO_UNITARIO": "NUMBER   – Costo promedio por unidad",
-            "MARCA":                   "VARCHAR2 – Marca del artículo",
+            "MARCA":                   "VARCHAR2 – Marca del artículo (columna se llama MARCA, NO DESC_MARCA — ese nombre solo existe en V_VENTAS_APEX)",
             "COD_ART_CORTO":           "VARCHAR2 – Código corto del artículo (preferir sobre COD_ARTICULO; puede estar vacío)",
             "DESC_CATEGOGIRA":         "VARCHAR2 – Categoría del artículo",
             "DESC_FAMILIA":            "VARCHAR2 – Familia de producto",
@@ -98,7 +98,6 @@ VIEWS: dict[str, dict] = {
             "COD_CLIENTE":        "VARCHAR2 – Código único del cliente",
             "NOMBRE":             "VARCHAR2 – Nombre o razón social",
             "FEC_ULTIMA_COMPRA":  "DATE     – Fecha de la última compra (clave para detectar inactividad)",
-            "FEC_ULTIMA_VISITA":  "DATE     – Fecha de última visita del vendedor",
             "DEUDA_VENCIDA":      "NUMBER   – Monto de deuda vencida",
             "DEUDA_TOTAL":        "NUMBER   – Deuda total del cliente",
             "CREDITO_DISPONIBLE": "NUMBER   – Crédito disponible para nuevas compras",
@@ -114,6 +113,78 @@ VIEWS: dict[str, dict] = {
             "DESCRIPCION_CIUDAD": "VARCHAR2 – Ciudad del cliente",
         },
         "date_filter_col": "FEC_ULTIMA_COMPRA",
+    },
+    "INV.V_METAS_VENDEDORES": {
+        "alias": "metas",
+        "description": (
+            "Metas de ventas asignadas por vendedor y período. "
+            "Usar para: comparar ventas reales vs meta, calcular % de cumplimiento, "
+            "detectar vendedores lejos de su objetivo, analizar brecha faltante."
+        ),
+        "columns": {
+            "COD_EMPRESA":  "VARCHAR2 – Código de empresa (SIEMPRE filtrar si está en contexto)",
+            "COD_VENDEDOR": "VARCHAR2 – Código del vendedor",
+            "FECHA_INICIO": "DATE     – Inicio del período de la meta",
+            "FECHA_FIN":    "DATE     – Fin del período de la meta",
+            "MONTO_META":   "NUMBER   – Monto objetivo de ventas para el período",
+        },
+        "date_filter_col": "FECHA_INICIO",
+    },
+    "INV.V_PEDIDOS_PRODUCTOS": {
+        "alias": "pedidos",
+        "description": (
+            "Líneas de pedidos de clientes con estado de facturación y autorización. "
+            "Usar para: pedidos pendientes o parcialmente facturados, pedidos sin autorizar, "
+            "importe pendiente de cobro, seguimiento de clientes con pedidos abiertos, "
+            "productos con alta demanda en cartera de pedidos."
+        ),
+        "columns": {
+            "COD_EMPRESA":          "VARCHAR2 – Código de empresa",
+            "COD_CLIENTE":          "VARCHAR2 – Código del cliente",
+            "SIGLAS":               "VARCHAR2 – Moneda del pedido",
+            "IMPORTE":              "NUMBER   – Importe original del pedido",
+            "IMPORTE_PENDIENTE":    "NUMBER   – Importe pendiente de facturación (clave para análisis de cartera)",
+            "NRO_COMPROBANTE":      "VARCHAR2 – Número del pedido (usar para agrupar líneas del mismo pedido)",
+            "TIPO":                 "VARCHAR2 – Tipo de entrega del pedido",
+            "ORIGEN_ENTREGA":       "VARCHAR2 – Lugar de entrega",
+            "COMENTARIO":           "VARCHAR2 – Comentario del pedido",
+            "NOMBRE_SUCURSAL":      "VARCHAR2 – Sucursal del cliente",
+            "DEPARTAMENTO":         "VARCHAR2 – Departamento de la sucursal",
+            "CIUDAD":               "VARCHAR2 – Ciudad de la sucursal",
+            "VOLUMEN":              "NUMBER   – Volumen del pedido",
+            "FECHA_PEDIDO":         "DATE     – Fecha de creación del pedido",
+            "ESTADO":               "VARCHAR2 – Estado: 'ANULADO','CERRADO','FACTURADO','PARCIALMENTE_FACTURADO','PENDIENTE'",
+            "COD_ARTICULO":         "VARCHAR2 – Código del artículo",
+            "CANTIDAD":             "NUMBER   – Cantidad pedida",
+            "CANTIDAD_FACTURADA":   "NUMBER   – Cantidad ya facturada",
+            "AUTORIZACION":         "VARCHAR2 – Estado de autorización del pedido (NULL = sin bloqueo)",
+            "COD_VENDEDOR":         "VARCHAR2 – Código del vendedor responsable",
+        },
+        "date_filter_col": "FECHA_PEDIDO",
+    },
+    "INV.V_ORDENES_TRABAJO_CLIENTES": {
+        "alias": "ordenes_trabajo",
+        "description": (
+            "Órdenes de trabajo (OT) / reparaciones de artículos de clientes. "
+            "Usar para: OTs pendientes de reparación, OTs en garantía, tiempo sin reparar, "
+            "OTs ingresadas en un período. NO tiene COD_VENDEDOR — filtrar vendedor vía "
+            "subquery de clientes sobre V_VENTAS_APEX."
+        ),
+        "columns": {
+            "OT":               "VARCHAR2 – Número de la orden de trabajo",
+            "ESTADO_OT":        "VARCHAR2 – Estado actual de la OT",
+            "FECHA_INGRESO":    "DATE     – Fecha en que ingresó la OT (columna de filtro por período)",
+            "FECHA_REPARACION": "DATE     – Fecha de reparación/cierre. NULL = pendiente de reparar",
+            "NUMERO_GARANTIA":  "VARCHAR2 – Número de garantía (si aplica)",
+            "COD_ARTICULO":     "VARCHAR2 – Código del artículo en reparación",
+            "DESC_ARTICULO":    "VARCHAR2 – Descripción del artículo",
+            "COD_EMPRESA":      "VARCHAR2 – Código de empresa (SIEMPRE filtrar si está en contexto)",
+            "EN_GARANTIA":      "VARCHAR2 – 'S' = en garantía, 'N' = fuera de garantía",
+            "COD_CLIENTE":      "VARCHAR2 – Código del cliente dueño del artículo",
+            "NOM_CLIENTE":      "VARCHAR2 – Nombre del cliente",
+            "COD_ORIGEN":       "VARCHAR2 – Origen de la OT",
+        },
+        "date_filter_col": "FECHA_INGRESO",
     },
 }
 

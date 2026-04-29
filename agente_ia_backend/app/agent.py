@@ -26,6 +26,35 @@ class AgentResult:
     datos: dict[str, Any] | None
 
 
+def _agrupar_items(items_raw: list[dict]) -> list[dict]:
+    """Agrupa artículos con el mismo cod sumando cantidades (elimina duplicados)."""
+    agrupado: dict = {}
+    for item in items_raw:
+        cod = item["cod"]
+        if cod in agrupado:
+            agrupado[cod]["qty"] += item["qty"]
+        else:
+            agrupado[cod] = dict(item)
+    return [v for v in agrupado.values() if v["qty"] > 0]
+
+
+def _calcular_cantidad_sugerida(cant_cliente, cant_vendedor) -> int:
+    """Cantidad sugerida: historial cliente → 80% promedio vendedor → mínimo 1."""
+    try:
+        c = float(cant_cliente or 0)
+        if c > 0:
+            return max(1, round(c))
+    except (TypeError, ValueError):
+        pass
+    try:
+        v = float(cant_vendedor or 0)
+        if v > 0:
+            return max(1, round(v * 0.8))
+    except (TypeError, ValueError):
+        pass
+    return 1
+
+
 def _inject_vendor_filter(sql: str, cod_vendedor: str, params: dict) -> tuple[str, dict]:
     """Garantiza AND COD_VENDEDOR = :P_COD_VENDEDOR si el LLM lo omitió."""
     sql_upper = sql.upper()
@@ -36,8 +65,9 @@ def _inject_vendor_filter(sql: str, cod_vendedor: str, params: dict) -> tuple[st
             params["P_COD_VENDEDOR"] = cod_vendedor
         return sql, params
 
-    # No aplica a este SQL (no usa las vistas de ventas/clientes)
-    if "V_VENTAS_APEX" not in sql_upper and "V_CLIENTE_APEX" not in sql_upper:
+    # No aplica a este SQL (no usa vistas que requieren filtro de vendedor)
+    _vendor_views = ("V_VENTAS_APEX", "V_CLIENTE_APEX", "V_PEDIDOS_PRODUCTOS", "V_METAS_VENDEDORES")
+    if not any(v in sql_upper for v in _vendor_views):
         return sql, params
 
     # Buscar la primera cláusula de nivel superior (profundidad 0 de paréntesis)
@@ -123,12 +153,113 @@ def handle_chat(
     if ctx.get("cod_vendedor"):
         sql, params = _inject_vendor_filter(sql, str(ctx["cod_vendedor"]), params)
 
-    # ── 5. Ejecutar contra Oracle ────────────────────────────────────────────
+    # ── 5. Validar que todos los bind variables del SQL tengan parámetro ────
+    _binds_in_sql = set(re.findall(r":([A-Za-z_][A-Za-z0-9_]*)", sql))
+    _params_upper = {k.upper() for k in params}
+    _missing = [b for b in _binds_in_sql if b.upper() not in _params_upper]
+    if _missing:
+        log.error("UNBOUND_PARAMS | falta en params: %s | SQL: %.300s", _missing, sql)
+        raise ValueError(f"Bind variables sin valor: {_missing}")
+
+    # ── 6. Ejecutar contra Oracle ────────────────────────────────────────────
     max_rows = min(int(ctx.get("max_rows") or settings.max_rows), 50)
     res = db.query(sql, params, max_rows=max_rows)
 
     # ── 6. LLM analiza resultados y genera insight de negocio ───────────────
-    respuesta = analyze_results(mensaje, sql, table_desc, res.rows, res.columns)
+    _analysis_ctx: dict = {}
+    # cod_cliente: prioridad 1) params["cod_cliente"] verificado como código real,
+    #              2) columna cod_cliente en filas, 3) lookup por nombre_cliente.
+    # El LLM a veces pone el NOMBRE en params["cod_cliente"] — verificamos contra BD.
+    if params.get("cod_cliente"):
+        _raw_cod = str(params["cod_cliente"])
+        try:
+            _verified = db.query_scalar(
+                "SELECT COD_CLIENTE FROM INV.V_CLIENTE_APEX"
+                " WHERE COD_CLIENTE = :c AND ROWNUM = 1",
+                {"c": _raw_cod},
+            )
+            if _verified:
+                _analysis_ctx["cod_cliente"] = str(_verified)
+            else:
+                # No es un código válido: intentar como nombre
+                _by_name = db.query_scalar(
+                    "SELECT COD_CLIENTE FROM INV.V_CLIENTE_APEX"
+                    " WHERE UPPER(NOMBRE) LIKE UPPER('%'||:n||'%') AND ROWNUM = 1",
+                    {"n": _raw_cod},
+                )
+                if _by_name:
+                    _analysis_ctx["cod_cliente"] = str(_by_name)
+                    log.info("ANALYSIS_CTX | cod_cliente resuelto por nombre: %r → %s", _raw_cod, _by_name)
+        except Exception:
+            _analysis_ctx["cod_cliente"] = _raw_cod
+    elif res.rows and res.rows[0].get("cod_cliente"):
+        _analysis_ctx["cod_cliente"] = str(res.rows[0]["cod_cliente"])
+    elif params.get("nombre_cliente"):
+        try:
+            r = db.query_scalar(
+                "SELECT COD_CLIENTE FROM INV.V_CLIENTE_APEX"
+                " WHERE UPPER(NOMBRE) LIKE UPPER('%'||:n||'%') AND ROWNUM = 1",
+                {"n": str(params["nombre_cliente"])},
+            )
+            if r:
+                _analysis_ctx["cod_cliente"] = str(r)
+        except Exception:
+            pass
+    if ctx.get("cod_vendedor"):
+        _analysis_ctx["cod_vendedor"] = str(ctx["cod_vendedor"])
+    log.info("ANALYSIS_CTX | %s", _analysis_ctx)
+    respuesta = analyze_results(mensaje, sql, table_desc, res.rows, res.columns, context=_analysis_ctx)
+    log.info("ANALYSIS_BTN | boton=%s", "js_abrir_pedido" in respuesta)
+
+    # ── Botón "Crear pedido" — inyectado por el backend, no delegado al LLM ──
+    cod_cliente_ctx = _analysis_ctx.get("cod_cliente")
+    _article_cols = {"cod_articulo", "codigo"}
+    _has_articles = bool(res.rows and _article_cols.intersection(set(res.columns)))
+    # No inyectar en consultas de OTs/reparaciones ni en otras vistas que no sean de ventas/stock
+    _is_ot_query = "ORDENES_TRABAJO" in sql.upper()
+    _ot_cols = {"estado_ot", "fecha_reparacion", "nom_cliente"}
+    _is_ot_result = bool(_ot_cols.intersection(set(res.columns)))
+    if cod_cliente_ctx and _has_articles and not _is_ot_query and not _is_ot_result and "js_abrir_pedido" not in respuesta:
+        _code_col    = next((c for c in res.columns if c in ("cod_articulo", "codigo")), "cod_articulo")
+        _desc_col    = next((c for c in res.columns if c in ("desc_articulo", "articulo", "descripcion")), None)
+        _div_col     = next((c for c in res.columns if c in ("desc_division",)), None)
+        _qty_col_cli = next((c for c in res.columns if c in ("cant_cliente", "qty_cliente")), None)
+        _qty_col_ven = next((c for c in res.columns if c in ("cant_vendedor", "qty_vendedor")), None)
+        _qty_col     = next(
+            (c for c in res.columns if c in (
+                "qty_sugerida", "cant_sugerida", "cantidad_sugerida",
+                "qty_vendida_mes", "compras_mes", "cantidad", "qty",
+            )),
+            None,
+        )
+        items_raw = []
+        for row in res.rows[:50]:
+            cod = str(row.get(_code_col) or "")
+            if not cod:
+                continue
+            if _div_col and str(row.get(_div_col) or "").upper().strip() == "PROMOS":
+                continue
+            _raw_desc = str(row.get(_desc_col) or "") if _desc_col else ""
+            desc = "".join(c for c in _raw_desc if ord(c) >= 0x20)[:40]
+            if _qty_col_cli is not None or _qty_col_ven is not None:
+                qty = _calcular_cantidad_sugerida(row.get(_qty_col_cli), row.get(_qty_col_ven))
+            else:
+                qty = max(1, int(row.get(_qty_col) or 1)) if _qty_col else 1
+            items_raw.append({"cod": cod, "desc": desc, "qty": qty})
+        items = _agrupar_items(items_raw)[:14]
+        if items:
+            import json as _json
+            items_json = _json.dumps(items, ensure_ascii=True)
+            btn = (
+                f'<div style="margin-top:12px">'
+                f'<button data-cliente="{cod_cliente_ctx}" data-items=\'{items_json}\' '
+                f'onclick="window.js_abrir_pedido(this.dataset.cliente,this.dataset.items)" '
+                f'style="padding:7px 16px;background:#0572c6;color:#fff;border:0;border-radius:6px;'
+                f'cursor:pointer;font-size:13px">📋 Crear pedido para cliente {cod_cliente_ctx}</button>'
+                f'</div>'
+            )
+            respuesta += "\n" + btn
+            log.info("ANALYSIS_BTN | boton inyectado para cod_cliente=%s items=%d", cod_cliente_ctx, len(items))
 
     return AgentResult(
         respuesta=respuesta,
@@ -224,8 +355,14 @@ def handle_greet(
 
     # 2. Mini stats — all fail-safe
     ventas_hoy: float | None = None
+    ventas_mes: float | None = None
     stock_critico: int | None = None
     clientes_inactivos: int | None = None
+    meta_pct: float | None = None
+    meta_monto: float | None = None
+    ventas_meta: float | None = None
+    pedidos_cnt: int | None = None
+    pedidos_monto: float | None = None
 
     try:
         sql_v = (
@@ -241,6 +378,23 @@ def handle_greet(
         r = db.query(sql_v, pv, max_rows=1)
         if r.rows:
             ventas_hoy = float(r.rows[0].get("total") or 0)
+    except Exception:
+        pass
+
+    try:
+        sql_vm = (
+            "SELECT NVL(SUM(MONTO), 0) AS TOTAL FROM INV.V_VENTAS_APEX"
+            " WHERE COD_EMPRESA = :cod_empresa"
+            " AND TIP_COMPROBANTE IN ('FCR','FCO')"
+            " AND FEC_FACTURA >= TRUNC(SYSDATE, 'MM')"
+        )
+        pvm: dict = {"cod_empresa": cod_empresa}
+        if cod_vendedor:
+            sql_vm += " AND COD_VENDEDOR = :cod_vendedor"
+            pvm["cod_vendedor"] = cod_vendedor
+        r = db.query(sql_vm, pvm, max_rows=1)
+        if r.rows:
+            ventas_mes = float(r.rows[0].get("total") or 0)
     except Exception:
         pass
 
@@ -275,11 +429,73 @@ def handle_greet(
     except Exception:
         pass
 
+    # Meta del mes (solo si tenemos cod_vendedor)
+    if cod_vendedor:
+        try:
+            r = db.query(
+                "SELECT m.MONTO_META,"
+                " NVL(SUM(v.MONTO), 0) AS ventas_reales"
+                " FROM INV.V_METAS_VENDEDORES m"
+                " LEFT JOIN INV.V_VENTAS_APEX v"
+                "   ON v.COD_VENDEDOR = m.COD_VENDEDOR"
+                "  AND v.COD_EMPRESA = m.COD_EMPRESA"
+                "  AND v.TIP_COMPROBANTE IN ('FCR','FCO')"
+                "  AND v.FEC_FACTURA >= m.FECHA_INICIO"
+                "  AND v.FEC_FACTURA <= m.FECHA_FIN"
+                " WHERE m.COD_EMPRESA = :cod_empresa"
+                "   AND m.COD_VENDEDOR = :cod_vendedor"
+                "   AND TRUNC(SYSDATE) BETWEEN m.FECHA_INICIO AND m.FECHA_FIN"
+                " GROUP BY m.MONTO_META, m.FECHA_INICIO, m.FECHA_FIN"
+                " FETCH FIRST 1 ROWS ONLY",
+                {"cod_empresa": cod_empresa, "cod_vendedor": cod_vendedor},
+                max_rows=1,
+            )
+            if r.rows:
+                _meta = float(r.rows[0].get("monto_meta") or 0)
+                _ventas = float(r.rows[0].get("ventas_reales") or 0)
+                if _meta > 0:
+                    meta_pct = (_ventas / _meta) * 100
+                    meta_monto = _meta
+                    ventas_meta = _ventas
+        except Exception:
+            pass
+
+    # Pedidos pendientes
+    try:
+        sql_ped = (
+            "SELECT COUNT(DISTINCT NRO_COMPROBANTE) AS cnt,"
+            " NVL(SUM(IMPORTE_PENDIENTE), 0) AS total_pend"
+            " FROM INV.V_PEDIDOS_PRODUCTOS"
+            " WHERE COD_EMPRESA = :cod_empresa"
+            " AND ESTADO IN ('PENDIENTE','PARCIALMENTE_FACTURADO')"
+        )
+        pp: dict = {"cod_empresa": cod_empresa}
+        if cod_vendedor:
+            sql_ped += " AND COD_VENDEDOR = :cod_vendedor"
+            pp["cod_vendedor"] = cod_vendedor
+        r = db.query(sql_ped, pp, max_rows=1)
+        if r.rows:
+            pedidos_cnt = int(r.rows[0].get("cnt") or 0)
+            pedidos_monto = float(r.rows[0].get("total_pend") or 0)
+    except Exception:
+        pass
+
     # 3. Build greeting (HTML con botones clickeables)
     stats: list[str] = []
     if ventas_hoy is not None:
         fmt = f"Gs. {int(ventas_hoy):,}".replace(",", ".")
         stats.append(f"📊 Hoy llevás {fmt} en ventas")
+    if ventas_mes is not None:
+        fmt_mes = f"Gs. {int(ventas_mes):,}".replace(",", ".")
+        stats.append(f"📅 Este mes: {fmt_mes} en ventas")
+    if meta_pct is not None and ventas_meta is not None and meta_monto is not None:
+        emoji_meta = "🟢" if meta_pct >= 80 else ("🟡" if meta_pct >= 50 else "🔴")
+        fmt_v = f"Gs. {int(ventas_meta):,}".replace(",", ".")
+        fmt_m = f"Gs. {int(meta_monto):,}".replace(",", ".")
+        stats.append(f"{emoji_meta} Meta del mes: {meta_pct:.1f}% ({fmt_v} de {fmt_m})")
+    if pedidos_cnt:
+        fmt_ped = f"Gs. {int(pedidos_monto):,}".replace(",", ".") if pedidos_monto else "—"
+        stats.append(f"📦 {pedidos_cnt} pedido{'s' if pedidos_cnt != 1 else ''} pendiente{'s' if pedidos_cnt != 1 else ''} ({fmt_ped})")
     if stock_critico:
         stats.append(f"⚠️ {stock_critico} artículos con stock crítico o en cero")
     if clientes_inactivos:
@@ -302,6 +518,7 @@ def handle_greet(
         "¿Cómo voy hoy?",
         "¿Cuánto vendí este mes?",
         "¿Estoy mejor que el mes pasado?",
+        "¿Qué notas de crédito tuve este mes?",
     ]))
     html.append(_section_html("📦", "Productos", [
         "¿Qué productos puedo vender más hoy?",
@@ -309,11 +526,28 @@ def handle_greet(
         "¿Qué productos tienen bajo stock?",
     ]))
     html.append(_section_html("🧍", "Clientes", [
-        "¿Qué clientes compran más?",
-        "¿Qué clientes están inactivos?",
+        "Ranking de compras de clientes",
+        "Clientes mayoristas activos sin compras este mes",
+        "Clientes mayoristas activos sin compras esta semana",
         "¿A quién debería visitar hoy?",
     ]))
-    html.append(_section_html("🎯", "Oportunidades", [
+    html.append(_section_html("🎯", "Metas", [
+        "¿Cómo voy contra mi meta este mes?",
+        "¿Cuánto me falta para alcanzar mi meta?",
+        "¿Qué porcentaje de mi meta ya cumplí?",
+    ]))
+    html.append(_section_html("📦", "Pedidos", [
+        "¿Qué pedidos tengo pendientes?",
+        "¿Cuáles son mis pedidos más grandes sin cerrar?",
+        "¿Qué pedidos necesitan autorización?",
+    ]))
+    html.append(_section_html("🔧", "Reparaciones / OT", [
+        "¿Qué OTs pendientes de reparación tienen mis clientes?",
+        "¿Qué OTs reparadas y no retiradas tienen mis clientes?",
+        "¿Qué OTs ingresaron este mes?",
+        "¿Cuánto tiempo llevan sin repararse?",
+    ]))
+    html.append(_section_html("💡", "Oportunidades", [
         "¿Dónde tengo oportunidades de venta?",
         "¿Qué puedo vender rápido hoy?",
         "¿Qué productos tienen alta demanda y stock disponible?",

@@ -917,7 +917,8 @@ wwv_flow_imp_page.create_page_da_action(
 ' +''<div id=aiH_233 style="height:390px;overflow-y:auto;padding:12px;background:#f4f6f8;"></div>''',
 ' +''<div id=aiCSV_233 style="display:none;padding:3px 10px;background:#fff;text-align:right;border-top:1px solid #eee;"><a id=aiCSVLnk href=# style="font-size:11px;color:#0572c6;">&darr; Exportar XLS</a></div>''',
 ' +''<div style="display:flex;gap:6px;padding:10px;background:#fff;border-top:1px solid #ddd;">''',
-' +''<input id=aiI_233 type=text placeholder="Escribe tu pregunta..." style="flex:1;padding:8px 11px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-transform:uppercase;">''',
+' +''<input id=aiI_233 type=text placeholder="Escrib&iacute; o dict&aacute; tu pregunta..." style="flex:1;padding:8px 11px;border:1px solid #ccc;border-radius:6px;font-size:13px;text-transform:uppercase;">''',
+' +''<button id=aiMic_233 type=button title="Entrada por voz" style="padding:8px 11px;background:#f0f4ff;color:#0572c6;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:16px;">&#127908;</button>''',
 ' +''<button id=aiS_233 type=button style="padding:8px 14px;background:#0572c6;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:13px;">Enviar</button>''',
 ' +''</div></div>'';',
 'document.body.appendChild(W);})();'))
@@ -980,6 +981,92 @@ wwv_flow_imp_page.create_page_da_action(
 '})();'))
 );
 wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(209900000000006233)
+,p_event_id=>wwv_flow_imp.id(209900000000002233)
+,p_event_result=>'TRUE'
+,p_action_sequence=>31
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'(function(){',
+'var d=document,inp=d.getElementById(''aiI_233'');',
+'window.js_abrir_pedido=function(codC,itemsJson){',
+'try{',
+'var raw=typeof itemsJson===''string''?JSON.parse(itemsJson):(itemsJson||[]);',
+'var m={};raw.forEach(function(i){',
+'if(m[i.cod])m[i.cod].qty=(m[i.cod].qty||0)+(parseInt(i.qty)||0);',
+'else m[i.cod]={cod:i.cod,desc:i.desc||'''',qty:parseInt(i.qty)||1};});',
+'var dd=Object.keys(m).map(function(k){return m[k];}).filter(function(i){return i.qty>0;});',
+'itemsJson=JSON.stringify(dd);',
+'}catch(e){}',
+'try{sessionStorage.setItem(''aiPedidoCliente'',codC);}catch(e){}',
+'apex.server.process(''SET_PEDIDO_CHAT'',',
+'{x01:itemsJson||''[]'',x02:codC,pageItems:''#P233_COD_EMPRESA''},',
+'{success:function(){apex.navigation.redirect(apex.util.makeApplicationUrl({pageId:34}));},',
+'error:function(){apex.message.showErrors([{type:''error'',location:''page'',',
+'message:''No se pudo preparar el pedido. Intente nuevamente.''}]);}});};',
+'var mic=d.getElementById(''aiMic_233'');',
+'if(mic){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;',
+'if(SR){var rec=new SR();rec.lang=''es-PY'';rec.interimResults=false;rec.maxAlternatives=1;',
+'rec.onstart=function(){mic.style.background=''#ff4444'';mic.style.color=''#fff'';mic.title=''Escuchando...'';};',
+'rec.onend=function(){mic.style.background=''#f0f4ff'';mic.style.color=''#0572c6'';mic.title=''Entrada por voz'';};',
+'rec.onresult=function(ev){var t=ev.results[0][0].transcript.toUpperCase();if(inp)inp.value=t;if(window._aiSend)window._aiSend(t);};',
+'rec.onerror=function(){mic.style.background=''#f0f4ff'';mic.style.color=''#0572c6'';};',
+'mic.onclick=function(){try{rec.start();}catch(e){}};',
+'}else{mic.title=''Voz no soportada en este navegador'';mic.style.opacity=''0.4'';mic.style.cursor=''not-allowed'';}}',
+'})();'))
+);
+wwv_flow_imp_page.create_page_da_action(
+ p_id=>wwv_flow_imp.id(340000000233320)
+,p_event_id=>wwv_flow_imp.id(209900000000002233)
+,p_event_result=>'TRUE'
+,p_action_sequence=>32
+,p_execute_on_page_init=>'Y'
+,p_action=>'NATIVE_JAVASCRIPT_CODE'
+,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'(function(){',
+'var d=document,API=''http://10.100.13.110:8010/chat'',_ld=null;',
+'function _doXl(){if(!_ld||!_ld.filas||!_ld.filas.length)return;',
+'var cols=_ld.columnas||Object.keys(_ld.filas[0]);',
+'var h=''<table><tr>''+cols.map(function(c){return''<th>''+c+''</th>'';}).join('''')+''</tr>'';',
+'_ld.filas.forEach(function(r){h+=''<tr>''+cols.map(function(c){return''<td>''+String(r[c]||'''')+''</td>'';}).join('''')+''</tr>'';});',
+'h+=''</table>'';var lnk=d.getElementById(''aiCSVLnk'');',
+'if(lnk){lnk.href=''data:application/vnd.ms-excel,''+encodeURIComponent(h);lnk.download=''datos.xls'';}}',
+'var _spinId=null,_spinEl=null;',
+'function _ui(on){var i=d.getElementById(''aiI_233''),b=d.getElementById(''aiS_233''),m=d.getElementById(''aiMic_233'');',
+'if(i)i.disabled=on;if(b){b.disabled=on;b.textContent=on?''...'':''Enviar'';}if(m)m.style.opacity=on?''0.4'':''1'';',
+'var box=d.getElementById(''aiH_233'');',
+'if(on){if(box&&!_spinEl){_spinEl=d.createElement(''div'');',
+'_spinEl.style.cssText=''margin:5px 0;padding:9px 12px;border-radius:10px;max-width:90%;background:#f0f4ff;color:#0572c6;font-style:italic;'';',
+'_spinEl.innerHTML=''Consultando.'';box.appendChild(_spinEl);box.scrollTop=box.scrollHeight;',
+'var _d=1;_spinId=setInterval(function(){if(_spinEl)_spinEl.innerHTML=''Consultando''+Array(_d+1).join(''.'');_d=_d%3+1;},450);}}',
+'else{if(_spinId){clearInterval(_spinId);_spinId=null;}',
+'if(_spinEl){if(_spinEl.parentNode)_spinEl.parentNode.removeChild(_spinEl);_spinEl=null;}}}',
+'window._aiSend=function(msg){',
+'var inp=d.getElementById(''aiI_233''),CSV=d.getElementById(''aiCSV_233'');',
+'var m=msg!=null?String(msg).trim():(inp?inp.value.trim():'''');',
+'if(!m)return;m=m.toUpperCase();',
+'var hist=window._aiGetC?window._aiGetC().slice(-6):[];',
+'if(window._aiApp)window._aiApp(''user'',m);if(inp)inp.value='''';_ui(true);',
+'var _c={cod_empresa:apex.item(''P233_COD_EMPRESA'').getValue(),',
+'cod_vendedor:apex.item(''P233_COD_VENDEDOR_PAG0'').getValue(),',
+'cod_empleado:apex.item(''P233_COD_EMPLEADO'').getValue(),',
+'ver_otros_vendedores:apex.item(''P233_VER_OTROS_VENDEDORES'').getValue(),periodo:''mes''};',
+'var att=0;function go(){att++;',
+'fetch(API,{method:''POST'',headers:{''Content-Type'':''application/json''},',
+'body:JSON.stringify({mensaje:m,usuario:''&APP_USER.'',contexto:_c,historial:hist})})',
+'.then(function(r){if(!r.ok)throw r.status;return r.json();})',
+'.then(function(j){_ui(false);',
+'if(window._aiApp)window._aiApp(''assistant'',j&&j.respuesta?j.respuesta:''Sin respuesta.'');',
+'if(j&&j.datos&&j.datos.filas&&j.datos.filas.length){_ld=j.datos;_doXl();if(CSV)CSV.style.display=''block'';}',
+'else{_ld=null;if(CSV)CSV.style.display=''none'';}',
+'})',
+'.catch(function(){if(att<3){setTimeout(go,3000);}',
+'else{_ui(false);if(window._aiApp)window._aiApp(''assistant'',''Error al conectar con el agente IA.'');}});',
+'}go();};',
+'})();'))
+);
+wwv_flow_imp_page.create_page_da_action(
  p_id=>wwv_flow_imp.id(209900000000005233)
 ,p_event_id=>wwv_flow_imp.id(209900000000002233)
 ,p_event_result=>'TRUE'
@@ -991,11 +1078,12 @@ wwv_flow_imp_page.create_page_da_action(
 'function mkB(t){return ''<button onclick="if(window._aiSend)window._aiSend(this.innerText)" style="display:inline-block;margin:2px 4px 2px 0;padding:4px 10px;border-radius:12px;border:1px solid #0572c6;color:#0572c6;background:#fff;cursor:pointer;font'
 ||'-size:11px">''+t+''</button>'';}',
 'function getSug(){var s='''';',
-'s+=''<div style="margin:5px 0"><b>&#128202; Ventas:</b><br>''+mkB(''&iquest;C&oacute;mo voy hoy?'')+mkB(''&iquest;Cu&aacute;nto vend&iacute; este mes?'')+mkB(''&iquest;Estoy mejor que el mes pasado?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#128202; Ventas:</b><br>''+mkB(''&iquest;C&oacute;mo voy hoy?'')+mkB(''&iquest;Cu&aacute;nto vend&iacute; este mes?'')+mkB(''&iquest;Estoy mejor que el mes pasado?'')+mkB(''&iquest;Qu&eacute; notas de cr&eacute;dito tuve este mes?'')+''</div>'';',
 's+=''<div style="margin:5px 0"><b>&#128230; Productos:</b><br>''+mkB(''&iquest;Qu&eacute; productos puedo vender m&aacute;s hoy?'')+mkB(''&iquest;Cu&aacute;les son los m&aacute;s vendidos?'')+mkB(''&iquest;Qu&eacute; productos tienen bajo stock?'')+''</div>'';',
-'s+=''<div style="margin:5px 0"><b>&#129485; Clientes:</b><br>''+mkB(''&iquest;Qu&eacute; clientes compran m&aacute;s?'')+mkB(''&iquest;Qu&eacute; clientes est&aacute;n inactivos?'')+mkB(''&iquest;A qui&eacute;n deber&iacute;a visitar hoy?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#129485; Clientes:</b><br>''+mkB(''Ranking de compras de clientes'')+mkB(''Clientes mayoristas activos sin compras este mes'')+mkB(''Clientes mayoristas activos sin compras esta semana'')+mkB(''&iquest;A qui&eacute;n deber&iacute;a visitar hoy?'')+''</div>'';',
 's+=''<div style="margin:5px 0"><b>&#127919; Oportunidades:</b><br>''+mkB(''&iquest;D&oacute;nde tengo oportunidades de venta?'')+mkB(''&iquest;Qu&eacute; puedo vender r&aacute;pido hoy?'')+mkB(''&iquest;Qu&eacute; productos tienen alta demanda y stock dispo'
 ||'nible?'')+''</div>'';',
+'s+=''<div style="margin:5px 0"><b>&#128295; Reparaciones / OT:</b><br>''+mkB(''&iquest;Qu&eacute; OTs pendientes de reparaci&oacute;n tienen mis clientes?'')+mkB(''&iquest;Qu&eacute; OTs reparadas y no retiradas tienen mis clientes?'')+mkB(''&iquest;Qu&eacute; OTs ingresaron este mes?'')+mkB(''&iquest;Cu&aacute;nto tiempo llevan sin repararse?'')+''</div>'';',
 'return s;}',
 'function greet(){',
 'var FB=''<b>Hola &#128075;</b><br><br><b>&#128172; &iquest;Qu&eacute; quer&eacute;s consultar hoy?</b>''+getSug();',
@@ -1027,6 +1115,30 @@ wwv_flow_imp_page.create_page_process(
 '  :P233_COD_EMPRESA := :P_COD_EMPRESA;',
 '  :P233_COD_EMPLEADO := :P_COD_EMPLEADO;',
 '  :P233_VER_OTROS_VENDEDORES := :P_VER_OTROS_VENDEDORES;',
+'END;'))
+,p_process_clob_language=>'PLSQL'
+);
+wwv_flow_imp_page.create_page_process(
+ p_id=>wwv_flow_imp.id(340000000233200)
+,p_process_sequence=>100
+,p_process_point=>'ON_DEMAND'
+,p_process_type=>'NATIVE_PLSQL'
+,p_process_name=>'SET_PEDIDO_CHAT'
+,p_process_sql_clob=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'BEGIN',
+'  APEX_COLLECTION.CREATE_OR_TRUNCATE_COLLECTION(''PEDIDO_CHAT'');',
+'  APEX_COLLECTION.ADD_MEMBER(',
+'    p_collection_name => ''PEDIDO_CHAT'',',
+'    p_c001            => apex_application.g_x02,',
+'    p_c002            => apex_application.g_x01);',
+'  APEX_JSON.OPEN_OBJECT;',
+'  APEX_JSON.WRITE(''status'',''OK'');',
+'  APEX_JSON.CLOSE_OBJECT;',
+'EXCEPTION WHEN OTHERS THEN',
+'  APEX_JSON.OPEN_OBJECT;',
+'  APEX_JSON.WRITE(''status'',''ERROR'');',
+'  APEX_JSON.WRITE(''msg'',SQLERRM);',
+'  APEX_JSON.CLOSE_OBJECT;',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
 );

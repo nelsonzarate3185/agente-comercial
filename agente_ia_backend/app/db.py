@@ -1,11 +1,21 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any
 
 import oracledb
 
 from .settings import settings
+
+_BIND_RE = re.compile(r":([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _filter_binds(sql: str, binds: dict) -> dict:
+    """Devuelve solo los bind variables que aparecen realmente en el SQL.
+    Evita ORA-01036 cuando el LLM incluye parámetros extra en el dict."""
+    used = {m.upper() for m in _BIND_RE.findall(sql)}
+    return {k: v for k, v in binds.items() if k.upper() in used}
 
 # Thick mode para compatibilidad con hashes de contraseña antiguos (10g/11g verifier).
 oracledb.init_oracle_client(lib_dir=r"C:\app\client\product\12.2.0\client_1")
@@ -51,12 +61,18 @@ class QueryResult:
 
 
 def query(sql: str, binds: dict[str, Any] | None = None, *, max_rows: int) -> QueryResult:
+    import logging
+    _log = logging.getLogger("agente_ia_backend")
     pool = get_pool()
-    binds = binds or {}
+    binds = _filter_binds(sql, binds or {})
     with pool.acquire() as conn:
         with conn.cursor() as cur:
             cur.arraysize = min(max_rows, 200)
-            cur.execute(sql, binds)
+            try:
+                cur.execute(sql, binds)
+            except oracledb.DatabaseError:
+                _log.error("DB.query FAILED\nSQL: %s\nbinds: %s", sql, binds)
+                raise
             cols = [d[0].lower() for d in (cur.description or [])]
             fetched = cur.fetchmany(numRows=max_rows)
             out_rows: list[dict[str, Any]] = []
@@ -67,7 +83,7 @@ def query(sql: str, binds: dict[str, Any] | None = None, *, max_rows: int) -> Qu
 
 def query_scalar(sql: str, binds: dict[str, Any] | None = None) -> Any:
     pool = get_pool()
-    binds = binds or {}
+    binds = _filter_binds(sql, binds or {})
     with pool.acquire() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, binds)
