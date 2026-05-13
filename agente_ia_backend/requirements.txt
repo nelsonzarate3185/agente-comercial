@@ -2,5 +2,5 @@ fastapi
 uvicorn[standard]
 pydantic
 python-dotenv
-oracledb
+oracledb>=1.0,<2.0
 anthropic

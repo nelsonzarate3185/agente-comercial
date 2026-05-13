@@ -18,6 +18,11 @@ class Settings(BaseModel):
     oracle_service: str = os.getenv("ORACLE_SERVICE", "ngodes")
     oracle_user: str = os.getenv("ORACLE_USER", "")
     oracle_password: str = os.getenv("ORACLE_PASSWORD", "")
+    # Thick mode: ruta a Oracle Instant Client. Vacío = thin mode.
+    oracle_client_dir: str = os.getenv(
+        "ORACLE_CLIENT_DIR",
+        r"C:\app\client\product\12.2.0\client_1",
+    )
 
     api_key: str | None = os.getenv("API_KEY") or None
     log_level: str = os.getenv("LOG_LEVEL", "INFO")

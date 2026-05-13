@@ -18,7 +18,10 @@ def _filter_binds(sql: str, binds: dict) -> dict:
     return {k: v for k, v in binds.items() if k.upper() in used}
 
 # Thick mode para compatibilidad con hashes de contraseña antiguos (10g/11g verifier).
-oracledb.init_oracle_client(lib_dir=r"C:\app\client\product\12.2.0\client_1")
+# La ruta se configura vía ORACLE_CLIENT_DIR en .env para que el mismo código funcione
+# tanto en Windows (dev/prod actual) como en Docker/Linux.
+if settings.oracle_client_dir:
+    oracledb.init_oracle_client(lib_dir=settings.oracle_client_dir)
 
 
 def _make_dsn() -> str:
