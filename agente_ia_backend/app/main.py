@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+import anthropic
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import oracledb
@@ -100,6 +101,38 @@ def chat(payload: ChatRequest, _: None = Depends(require_api_key)) -> ChatRespon
             ),
             sql_generado=None,
             datos={"error": "unbound_params"},
+        )
+    except anthropic.RateLimitError:
+        log.warning("Anthropic rate limit alcanzado")
+        return ChatResponse(
+            respuesta=(
+                "📊 Resumen:\n"
+                "El servicio de IA está temporalmente saturado.\n\n"
+                "📈 Hallazgos clave:\n"
+                "- Se alcanzó el límite de requests a la API de Claude.\n\n"
+                "⚠️ Alertas:\n"
+                "Esperá unos segundos e intentá de nuevo.\n\n"
+                "💡 Recomendaciones:\n"
+                "- Volvé a enviar la misma pregunta en unos instantes."
+            ),
+            sql_generado=None,
+            datos={"error": "rate_limit"},
+        )
+    except (anthropic.APITimeoutError, anthropic.APIConnectionError) as e:
+        log.exception("Anthropic conexión/timeout: %s", e)
+        return ChatResponse(
+            respuesta=(
+                "📊 Resumen:\n"
+                "No se pudo conectar al servicio de IA en este momento.\n\n"
+                "📈 Hallazgos clave:\n"
+                "- Error de conexión con la API de Claude.\n\n"
+                "⚠️ Alertas:\n"
+                "Puede ser un problema temporal de red.\n\n"
+                "💡 Recomendaciones:\n"
+                "- Intentá de nuevo en unos segundos."
+            ),
+            sql_generado=None,
+            datos={"error": "api_connection_error"},
         )
     except Exception as e:
         log.exception("Unhandled error in /chat")
