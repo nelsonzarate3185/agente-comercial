@@ -111,12 +111,15 @@ def handle_chat(
     if not ctx.get("cod_empresa"):
         ctx["cod_empresa"] = "1"
 
-    # cod_vendedor: filtrar por vendedor del contexto salvo que ver_otros_vendedores esté activo
+    # cod_vendedor: guardar antes del pop para usarlo como fallback en binds
+    _raw_cod_vendedor = str(ctx.get("cod_vendedor", "") or "").strip()
+
     ver_otros = str(ctx.get("ver_otros_vendedores", "") or "").strip().upper()
     if ver_otros in ("Y", "1", "TRUE", "S", "YES"):
         ctx.pop("cod_vendedor", None)
     elif ctx.get("cod_vendedor"):
         ctx["cod_vendedor"] = str(ctx["cod_vendedor"]).strip().upper()
+        _raw_cod_vendedor = ctx["cod_vendedor"]
 
     # ── 1. LLM interpreta la pregunta y genera SQL ──────────────────────────
     llm = generate_sql(mensaje, ctx, history)
@@ -157,6 +160,19 @@ def handle_chat(
     _binds_in_sql = set(re.findall(r":([A-Za-z_][A-Za-z0-9_]*)", sql))
     _params_upper = {k.upper() for k in params}
     _missing = [b for b in _binds_in_sql if b.upper() not in _params_upper]
+
+    # Fallback: si P_COD_VENDEDOR quedó sin valor (ej: ver_otros='S' pero LLM lo incluyó),
+    # usar el cod_vendedor original del request para no romper la consulta.
+    if _missing and _raw_cod_vendedor:
+        _still_missing = []
+        for b in _missing:
+            if b.upper() == "P_COD_VENDEDOR":
+                params["P_COD_VENDEDOR"] = _raw_cod_vendedor
+                log.warning("VENDOR_BIND_FALLBACK | P_COD_VENDEDOR inyectado desde request original")
+            else:
+                _still_missing.append(b)
+        _missing = _still_missing
+
     if _missing:
         log.error("UNBOUND_PARAMS | falta en params: %s | SQL: %.300s", _missing, sql)
         raise ValueError(f"Bind variables sin valor: {_missing}")
