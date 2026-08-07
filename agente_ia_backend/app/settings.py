@@ -33,6 +33,8 @@ class Settings(BaseModel):
     # LLM
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     llm_model: str = os.getenv("LLM_MODEL", "claude-haiku-4-5-20251001")
+    llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "60"))
+    http_proxy: str = os.getenv("HTTP_PROXY", "")
 
 
 settings = Settings()

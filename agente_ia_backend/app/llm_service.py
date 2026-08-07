@@ -30,7 +30,12 @@ def _get_client() -> anthropic.Anthropic:
                 "Obtené una clave en https://console.anthropic.com/"
             )
         # Proxy corporativo con certificado autofirmado: deshabilitamos verificación SSL.
-        http_client = httpx.Client(verify=False)
+        proxy = settings.http_proxy or None
+        http_client = httpx.Client(
+            verify=False,
+            timeout=httpx.Timeout(settings.llm_timeout),
+            proxy=proxy,
+        )
         _client = anthropic.Anthropic(
             api_key=settings.anthropic_api_key,
             http_client=http_client,
