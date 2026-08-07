@@ -293,12 +293,20 @@ def generate_sql(
     messages: list[dict] = []
 
     # Historial de conversación — últimas 6 entradas (3 pares user/assistant)
+    # Se descartan respuestas de error para no contaminar el contexto del LLM.
+    _error_markers = ("api_connection_error", "rate_limit", "unbound_params",
+                      "No se pudo conectar", "Bind variables sin valor",
+                      "El modelo generó una consulta con parámetros incompletos",
+                      "servicio de IA está temporalmente saturado")
     if history:
         for h in history[-6:]:
             role = h.get("role", "")
-            content = h.get("content", "")
-            if role in ("user", "assistant") and content:
-                messages.append({"role": role, "content": str(content)[:2000]})
+            content = h.get("content", "") or ""
+            if role not in ("user", "assistant") or not content:
+                continue
+            if role == "assistant" and any(m in content for m in _error_markers):
+                continue
+            messages.append({"role": role, "content": str(content)[:2000]})
 
     # Construir mensaje del usuario con contexto
     ctx_parts: list[str] = []
