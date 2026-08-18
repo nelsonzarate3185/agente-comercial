@@ -5,49 +5,20 @@ pool:
   name: Docker-Test
 
 steps:
-
 - checkout: self
 
 - script: |
     echo "=========================================="
-    echo "USUARIO"
+    echo "CONTENIDO DESCARGADO DESDE AZURE REPOS"
     echo "=========================================="
-    whoami
+
+    echo "Build Sources Directory:"
+    echo "$(Build.SourcesDirectory)"
 
     echo ""
-    echo "=========================================="
-    echo "AGENT WORK FOLDER"
-    echo "=========================================="
-    echo "$AGENT_WORKFOLDER"
+    echo "Contenido:"
+    ls -la "$(Build.SourcesDirectory)/agente_ia_backend"
 
-    echo ""
-    echo "=========================================="
-    echo "BUILD SOURCES DIRECTORY"
-    echo "=========================================="
-    echo "$BUILD_SOURCESDIRECTORY"
-
-    echo ""
-    echo "=========================================="
-    echo "DIRECTORIO ACTUAL"
-    echo "=========================================="
-    pwd
-
-    echo ""
-    echo "=========================================="
-    echo "CONTENIDO DEL REPOSITORIO"
-    echo "=========================================="
-    ls -la
-
-    echo ""
-    echo "=========================================="
-    echo "AGENTE IA BACKEND"
-    echo "=========================================="
-    ls -la agente_ia_backend
-
-    echo ""
-    echo "=========================================="
-    echo "APP"
-    echo "=========================================="
-    ls -la agente_ia_backend/app
-
-  displayName: "Prueba checkout Agente IA"
+- script: |
+    sudo /usr/local/sbin/deploy-agente-ia.sh "$(Build.SourcesDirectory)/agente_ia_backend"
+  displayName: "Deploy Agente IA TEST"
