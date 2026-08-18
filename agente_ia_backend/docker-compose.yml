@@ -1,12 +1,15 @@
 services:
+
   agente-ia:
-    build: .
+    build:
+      context: /media/sdb1/agente-ia-comercial/
+      dockerfile: Dockerfile
     container_name: agente_comercial_ia
     restart: unless-stopped
     ports:
       - "8010:8010"
     env_file:
-      - .env
+      - /media/sdb1/agente-ia-comercial/.env
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8010/health')"]
