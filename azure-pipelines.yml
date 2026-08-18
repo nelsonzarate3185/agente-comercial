@@ -1,0 +1,53 @@
+trigger:
+- main
+
+pool:
+  name: Docker-Test
+
+steps:
+
+- checkout: self
+
+- script: |
+    echo "=========================================="
+    echo "USUARIO"
+    echo "=========================================="
+    whoami
+
+    echo ""
+    echo "=========================================="
+    echo "AGENT WORK FOLDER"
+    echo "=========================================="
+    echo "$AGENT_WORKFOLDER"
+
+    echo ""
+    echo "=========================================="
+    echo "BUILD SOURCES DIRECTORY"
+    echo "=========================================="
+    echo "$BUILD_SOURCESDIRECTORY"
+
+    echo ""
+    echo "=========================================="
+    echo "DIRECTORIO ACTUAL"
+    echo "=========================================="
+    pwd
+
+    echo ""
+    echo "=========================================="
+    echo "CONTENIDO DEL REPOSITORIO"
+    echo "=========================================="
+    ls -la
+
+    echo ""
+    echo "=========================================="
+    echo "AGENTE IA BACKEND"
+    echo "=========================================="
+    ls -la agente_ia_backend
+
+    echo ""
+    echo "=========================================="
+    echo "APP"
+    echo "=========================================="
+    ls -la agente_ia_backend/app
+
+  displayName: "Prueba checkout Agente IA"
