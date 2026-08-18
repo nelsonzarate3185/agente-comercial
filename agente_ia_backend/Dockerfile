@@ -4,7 +4,11 @@ WORKDIR /app
 
 # libaio1 es requerido por Oracle Instant Client en Linux
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libaio1 && \
+    apt-get install -y --no-install-recommends \
+        libaio-dev \
+        libnsl2 && \
+    ln -s /usr/lib/x86_64-linux-gnu/libaio.so.1t64 \
+           /usr/lib/x86_64-linux-gnu/libaio.so.1 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -16,7 +20,14 @@ COPY app ./app
 # Antes de buildear, descargar el ZIP desde:
 #   https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
 # Descomprimir y renombrar la carpeta como instantclient/ junto a este Dockerfile.
-COPY instantclient/ /opt/oracle/instantclient/
+COPY instantclient_12_2/ /opt/oracle/instantclient/
+
+RUN ln -s /opt/oracle/instantclient/libclntsh.so.12.1 \
+          /opt/oracle/instantclient/libclntsh.so
+
+RUN ln -s /opt/oracle/instantclient/libocci.so.12.1 \
+          /opt/oracle/instantclient/libocci.so
+
 RUN echo /opt/oracle/instantclient > /etc/ld.so.conf.d/oracle-ic.conf && ldconfig
 
 ENV PYTHONUNBUFFERED=1
