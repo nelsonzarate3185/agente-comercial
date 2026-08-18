@@ -17,7 +17,7 @@ logging.basicConfig(level=getattr(logging, settings.log_level.upper(), logging.I
 log = logging.getLogger("agente_ia_backend")
 
 
-app = FastAPI(title="Agente IA Comercial", version="0.1.0")
+app = FastAPI(title="Agente IA Comercial", version="0.1.0", root_path=os.getenv("ROOT_PATH", ""))
 
 # Si el backend se consume desde APEX en otro host, CORS puede ser útil.
 app.add_middleware(
