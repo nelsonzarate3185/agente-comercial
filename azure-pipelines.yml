@@ -1,24 +1,56 @@
 trigger:
 - main
 
-pool:
-  name: Docker-Test
+stages:
 
-steps:
-- checkout: self
+- stage: Build
+  displayName: "Build y Validaciones"
 
-- script: |
-    echo "=========================================="
-    echo "CONTENIDO DESCARGADO DESDE AZURE REPOS"
-    echo "=========================================="
+  jobs:
+  - job: Checkout
 
-    echo "Build Sources Directory:"
-    echo "$(Build.SourcesDirectory)"
+    pool:
+      name: Docker-Test
 
-    echo ""
-    echo "Contenido:"
-    ls -la "$(Build.SourcesDirectory)/agente_ia_backend"
+    steps:
 
-- script: |
-    sudo /usr/local/sbin/deploy-agente-ia.sh "$(Build.SourcesDirectory)/agente_ia_backend"
-  displayName: "Deploy Agente IA TEST"
+    - checkout: self
+
+    - script: |
+        echo "=========================================="
+        echo "CONTENIDO DESCARGADO DESDE AZURE REPOS"
+        echo "=========================================="
+
+        echo "Build Sources Directory:"
+        echo "$(Build.SourcesDirectory)"
+
+        echo ""
+        echo "Contenido:"
+        ls -la "$(Build.SourcesDirectory)/agente_ia_backend"
+
+      displayName: "Validar Checkout"
+
+- stage: Deploy_Dev
+  displayName: "Deploy DEV"
+
+  dependsOn: Build
+
+  jobs:
+  - deployment: DeployAgenteIA
+
+    pool:
+      name: Docker-Test
+
+    environment: Dev
+
+    strategy:
+      runOnce:
+        deploy:
+
+          steps:
+
+          - checkout: self
+
+          - script: |
+              sudo /usr/local/sbin/deploy-agente-ia.sh "$(Build.SourcesDirectory)/agente_ia_backend"
+            displayName: "Deploy Agente IA DEV"
