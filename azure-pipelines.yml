@@ -3,11 +3,14 @@ trigger:
 
 stages:
 
-- stage: Build
-  displayName: "Build y Validaciones"
+# ==========================================
+# VALIDACION PREVIA
+# ==========================================
+- stage: Validate
+  displayName: "Validar Código"
 
   jobs:
-  - job: Checkout
+  - job: DockerValidation
 
     pool:
       name: Docker-Test
@@ -30,10 +33,33 @@ stages:
 
       displayName: "Validar Checkout"
 
+    - script: |
+        set -e
+
+        cd "$(Build.SourcesDirectory)/agente_ia_backend"
+
+        echo "=========================================="
+        echo "VALIDACION PREVIA DEL DOCKER BUILD"
+        echo "=========================================="
+
+        docker build \
+          -t agente-ia-validation:$(Build.BuildId) \
+          .
+
+        echo "Docker Build OK"
+
+      displayName: "Validar Docker Build"
+
+
+# ==========================================
+# DEPLOY DEV
+# ==========================================
 - stage: Deploy_Dev
   displayName: "Deploy DEV"
 
-  dependsOn: Build
+  dependsOn: Validate
+
+  condition: succeeded()
 
   jobs:
   - deployment: DeployAgenteIA
@@ -52,5 +78,20 @@ stages:
           - checkout: self
 
           - script: |
-              sudo /usr/local/sbin/deploy-agente-ia.sh "$(Build.SourcesDirectory)/agente_ia_backend"
+              echo "=========================================="
+              echo "RELEASE INFORMATION"
+              echo "=========================================="
+
+              echo "Build ID........: $(Build.BuildId)"
+              echo "Commit..........: $(Build.SourceVersion)"
+              echo "Branch..........: $(Build.SourceBranchName)"
+              echo "Sources.........: $(Build.SourcesDirectory)"
+
+            displayName: "Release Info"
+
+          - script: |
+              sudo BUILD_BUILDID=$(Build.BuildId) \
+              /usr/local/sbin/deploy-agente-ia.sh \
+              "$(Build.SourcesDirectory)/agente_ia_backend"
+
             displayName: "Deploy Agente IA DEV"
