@@ -36,4 +36,4 @@ ENV ORACLE_CLIENT_DIR=/opt/oracle/instantclient
 
 EXPOSE 8010
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8010"]
-"error intencional"
+#"error intencional"
