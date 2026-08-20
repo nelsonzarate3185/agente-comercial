@@ -139,5 +139,3 @@ def chat(payload: ChatRequest, _: None = Depends(require_api_key)) -> ChatRespon
     except Exception as e:
         log.exception("Unhandled error in /chat")
         raise HTTPException(status_code=500, detail="Error interno del agente IA") from e
-
-
