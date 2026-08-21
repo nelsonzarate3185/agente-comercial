@@ -3,14 +3,11 @@ trigger:
 
 stages:
 
-# ==========================================
-# VALIDACION PREVIA
-# ==========================================
 - stage: Validate
-  displayName: "Validar Código"
+  displayName: "Validate"
 
   jobs:
-  - job: DockerValidation
+  - job: Validation
 
     pool:
       name: Docker-Test
@@ -20,40 +17,12 @@ stages:
     - checkout: self
 
     - script: |
-        echo "=========================================="
-        echo "CONTENIDO DESCARGADO DESDE AZURE REPOS"
-        echo "=========================================="
-
-        echo "Build Sources Directory:"
-        echo "$(Build.SourcesDirectory)"
-
-        echo ""
-        echo "Contenido:"
-        ls -la "$(Build.SourcesDirectory)/agente_ia_backend"
-
-      displayName: "Validar Checkout"
-
-    - script: |
-        set -e
-
-        cd "$(Build.SourcesDirectory)/agente_ia_backend"
-
-        echo "=========================================="
-        echo "VALIDACION PREVIA DEL DOCKER BUILD"
-        echo "=========================================="
-
-        docker build \
-          -t agente-ia-validation:$(Build.BuildId) \
-          .
-
-        echo "Docker Build OK"
+        sudo /usr/local/sbin/deploy-agente-ia.sh \
+        validate \
+        "$(Build.SourcesDirectory)/agente_ia_backend"
 
       displayName: "Validar Docker Build"
 
-
-# ==========================================
-# DEPLOY DEV
-# ==========================================
 - stage: Deploy_Dev
   displayName: "Deploy DEV"
 
@@ -78,20 +47,16 @@ stages:
           - checkout: self
 
           - script: |
-              echo "=========================================="
-              echo "RELEASE INFORMATION"
-              echo "=========================================="
-
-              echo "Build ID........: $(Build.BuildId)"
-              echo "Commit..........: $(Build.SourceVersion)"
-              echo "Branch..........: $(Build.SourceBranchName)"
-              echo "Sources.........: $(Build.SourcesDirectory)"
+              echo "Build ID: $(Build.BuildId)"
+              echo "Commit: $(Build.SourceVersion)"
+              echo "Branch: $(Build.SourceBranchName)"
 
             displayName: "Release Info"
 
           - script: |
               sudo BUILD_BUILDID=$(Build.BuildId) \
               /usr/local/sbin/deploy-agente-ia.sh \
+              deploy \
               "$(Build.SourcesDirectory)/agente_ia_backend"
 
             displayName: "Deploy Agente IA DEV"
