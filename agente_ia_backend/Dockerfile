@@ -20,7 +20,7 @@ COPY app ./app
 # Antes de buildear, descargar el ZIP desde:
 #   https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
 # Descomprimir y renombrar la carpeta como instantclient/ junto a este Dockerfile.
-COPY instantclient_12_2/ /opt/oracle/instantclient/
+COPY /media/sdb1/agente-ia-comercial/instantclient_12_2/ /opt/oracle/instantclient/
 
 RUN ln -s /opt/oracle/instantclient/libclntsh.so.12.1 \
           /opt/oracle/instantclient/libclntsh.so
