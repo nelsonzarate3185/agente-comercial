@@ -136,6 +136,34 @@ def chat(payload: ChatRequest, _: None = Depends(require_api_key)) -> ChatRespon
             sql_generado=None,
             datos={"error": "api_connection_error"},
         )
+    except anthropic.AuthenticationError as e:
+        log.error("Anthropic clave inválida o expirada: %s", e)
+        return ChatResponse(
+            respuesta=(
+                "📊 Resumen:\n"
+                "La clave de acceso al servicio de IA no es válida.\n\n"
+                "⚠️ Alertas:\n"
+                "Revisar ANTHROPIC_API_KEY en el servidor.\n\n"
+                "💡 Recomendaciones:\n"
+                "- Contactar al administrador del sistema."
+            ),
+            sql_generado=None,
+            datos={"error": "api_auth_error"},
+        )
+    except anthropic.APIStatusError as e:
+        log.error("Anthropic API status error %s: %s", e.status_code, e.message)
+        return ChatResponse(
+            respuesta=(
+                "📊 Resumen:\n"
+                "El servicio de IA devolvió un error inesperado.\n\n"
+                "⚠️ Alertas:\n"
+                f"- Código HTTP: {e.status_code}\n\n"
+                "💡 Recomendaciones:\n"
+                "- Intentá de nuevo en unos segundos."
+            ),
+            sql_generado=None,
+            datos={"error": f"api_status_{e.status_code}"},
+        )
     except Exception as e:
         log.exception("Unhandled error in /chat")
         raise HTTPException(status_code=500, detail="Error interno del agente IA") from e
