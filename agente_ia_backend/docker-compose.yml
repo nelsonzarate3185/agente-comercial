@@ -9,7 +9,7 @@ services:
     ports:
       - "8010:8010"
     env_file:
-      - .env
+      - /media/sdb1/agente-ia-comercial/.env
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8010/health')"]
