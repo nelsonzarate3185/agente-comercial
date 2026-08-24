@@ -1,0 +1,53 @@
+trigger: none
+2
+ 
+3
+stages:
+4
+ 
+5
+- stage: Rollback_Test
+6
+displayName: "Rollback TEST"
+7
+ 
+8
+jobs:
+9
+ 
+10
+- deployment: RollbackAgenteIA
+11
+ 
+12
+pool:
+13
+name: Docker-Test
+14
+ 
+15
+environment: Testing
+16
+ 
+17
+strategy:
+18
+runOnce:
+19
+ 
+20
+deploy:
+21
+ 
+22
+steps:
+23
+ 
+24
+- script: |
+25
+sudo /usr/local/sbin/rollback-agente-ia.sh
+26
+ 
+27
+displayName: "Rollback Agente IA TEST"
