@@ -1,14 +1,13 @@
-trigger:
-- main
+trigger: none
 
 stages:
 
-- stage: Deploy_Test
-  displayName: "Deploy TEST"
+- stage: Rollback_Test
+  displayName: "Rollback TEST"
 
   jobs:
 
-  - deployment: DeployAgenteIA
+  - deployment: RollbackAgenteIA
 
     pool:
       name: Docker-Test
@@ -22,23 +21,7 @@ stages:
 
           steps:
 
-          - checkout: self
-
           - script: |
-              echo "=========================================="
-              echo "RELEASE INFORMATION"
-              echo "=========================================="
+              sudo /usr/local/sbin/rollback-agente-ia.sh
 
-              echo "Build ID : $(Build.BuildId)"
-              echo "Commit   : $(Build.SourceVersion)"
-              echo "Branch   : $(Build.SourceBranchName)"
-              echo "Source   : $(Build.SourcesDirectory)"
-
-            displayName: "Release Info"
-
-          - script: |
-              sudo /usr/local/sbin/deploy-agente-ia.sh \
-              "$(Build.SourcesDirectory)/agente_ia_backend" \
-              "$(Build.BuildId)"
-
-            displayName: "Deploy Agente IA TEST"
+            displayName: "Rollback Agente IA TEST"
