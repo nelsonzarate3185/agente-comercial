@@ -35,7 +35,7 @@ app.add_middleware(
 def health() -> dict[str, str]:
     return {
         "status": "ok",
-        "version": "1.0"
+        "version": "2.0"
     }
 
 @app.post("/greet", response_model=ChatResponse)
