@@ -3,43 +3,21 @@ trigger:
 
 stages:
 
-- stage: Validate
-  displayName: "Validate"
+- stage: Deploy_Test
+  displayName: "Deploy TEST"
 
   jobs:
-  - job: Validation
 
-    pool:
-      name: Docker-Test
-
-    steps:
-
-    - checkout: self
-
-    - script: |
-        sudo /usr/local/sbin/deploy-agente-ia.sh \
-        validate \
-        "$(Build.SourcesDirectory)/agente_ia_backend"
-
-      displayName: "Validar Docker Build"
-
-- stage: Deploy_Dev
-  displayName: "Deploy DEV"
-
-  dependsOn: Validate
-
-  condition: succeeded()
-
-  jobs:
   - deployment: DeployAgenteIA
 
     pool:
       name: Docker-Test
 
-    environment: Dev
+    environment: Testing
 
     strategy:
       runOnce:
+
         deploy:
 
           steps:
@@ -47,16 +25,20 @@ stages:
           - checkout: self
 
           - script: |
-              echo "Build ID: $(Build.BuildId)"
-              echo "Commit: $(Build.SourceVersion)"
-              echo "Branch: $(Build.SourceBranchName)"
+              echo "=========================================="
+              echo "RELEASE INFORMATION"
+              echo "=========================================="
+
+              echo "Build ID : $(Build.BuildId)"
+              echo "Commit   : $(Build.SourceVersion)"
+              echo "Branch   : $(Build.SourceBranchName)"
+              echo "Source   : $(Build.SourcesDirectory)"
 
             displayName: "Release Info"
 
           - script: |
               sudo BUILD_BUILDID=$(Build.BuildId) \
               /usr/local/sbin/deploy-agente-ia.sh \
-              deploy \
               "$(Build.SourcesDirectory)/agente_ia_backend"
 
-            displayName: "Deploy Agente IA DEV"
+            displayName: "Deploy Agente IA TEST"
