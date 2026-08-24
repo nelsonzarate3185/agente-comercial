@@ -33,8 +33,10 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
-
+    return {
+        "status": "ok",
+        "version": "2.0"
+    }
 
 @app.post("/greet", response_model=ChatResponse)
 def greet(payload: GreetRequest, _: None = Depends(require_api_key)) -> ChatResponse:
