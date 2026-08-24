@@ -37,8 +37,8 @@ stages:
             displayName: "Release Info"
 
           - script: |
-              sudo BUILD_BUILDID=$(Build.BuildId) \
               /usr/local/sbin/deploy-agente-ia.sh \
               "$(Build.SourcesDirectory)/agente_ia_backend"
+              "$(Build.BuildId)"
 
             displayName: "Deploy Agente IA TEST"
