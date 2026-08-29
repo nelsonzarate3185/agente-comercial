@@ -3,5 +3,5 @@ uvicorn[standard]
 pydantic
 python-dotenv
 oracledb>=1.0,<2.0
-anthropic
-httpx
+anthropic==1.0.0
+httpx2==2.12.0
