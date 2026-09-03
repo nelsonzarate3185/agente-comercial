@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import oracledb
 
 from .agent import handle_chat, handle_greet
-from .schemas import ChatRequest, ChatResponse, GreetRequest
+from .auth import create_access_token, validate_user_db
+from .schemas import ChatRequest, ChatResponse, GreetRequest, LoginRequest, TokenResponse
 from .security import require_api_key
 from .settings import settings
 
@@ -37,6 +38,18 @@ def health() -> dict[str, str]:
         "status": "ok",
         "version": "1.0"
     }
+
+@app.post("/auth/token", response_model=TokenResponse)
+def login(payload: LoginRequest) -> TokenResponse:
+    if not validate_user_db(payload.nombre_usuario, payload.clave_secreta):
+        raise HTTPException(status_code=401, detail="Credenciales inválidas o usuario inactivo")
+    token = create_access_token(payload.nombre_usuario)
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        expires_in=settings.jwt_expiration_minutes * 60,
+    )
+
 
 @app.post("/greet", response_model=ChatResponse)
 def greet(payload: GreetRequest, _: None = Depends(require_api_key)) -> ChatResponse:

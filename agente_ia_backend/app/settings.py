@@ -36,6 +36,11 @@ class Settings(BaseModel):
     llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "60"))
     http_proxy: str = os.getenv("HTTP_PROXY", "")
 
+    # JWT
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "kairos-secret-CHANGE-ME")
+    jwt_algorithm: str = os.getenv("JWT_ALGORITHM", "HS256")
+    jwt_expiration_minutes: int = int(os.getenv("JWT_EXPIRATION_MINUTES", "480"))
+
 
 settings = Settings()
 

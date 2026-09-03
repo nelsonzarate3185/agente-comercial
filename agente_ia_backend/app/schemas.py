@@ -4,6 +4,17 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class LoginRequest(BaseModel):
+    nombre_usuario: str = Field(min_length=1, max_length=255)
+    clave_secreta: str = Field(min_length=1, max_length=255)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int  # segundos
+
+
 class ChatRequest(BaseModel):
     mensaje: str = Field(min_length=1, max_length=4000)
     usuario: str = Field(min_length=1, max_length=255)
