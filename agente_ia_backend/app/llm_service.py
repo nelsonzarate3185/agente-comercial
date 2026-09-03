@@ -10,7 +10,7 @@ import json
 import logging
 from typing import Any
 
-import httpx2
+import httpx
 import anthropic
 
 from .settings import settings
@@ -31,9 +31,9 @@ def _get_client() -> anthropic.Anthropic:
             )
         # Proxy corporativo con certificado autofirmado: deshabilitamos verificación SSL.
         proxy = settings.http_proxy or None
-        http_client = httpx2.Client(
+        http_client = httpx.Client(
             verify=False,
-            timeout=httpx2.Timeout(settings.llm_timeout),
+            timeout=httpx.Timeout(settings.llm_timeout),
             proxy=proxy,
         )
         _client = anthropic.Anthropic(
