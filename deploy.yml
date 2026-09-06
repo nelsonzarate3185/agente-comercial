@@ -42,3 +42,50 @@ stages:
               "$(Build.BuildId)"
 
             displayName: "Deploy Agente IA TEST"
+
+
+- stage: Deploy_Prod_Artigas
+
+  displayName: "Deploy PROD Artigas"
+
+  dependsOn: Deploy_Test
+
+  condition: succeeded()
+
+  jobs:
+
+  - deployment: DeployAgenteIAProd
+
+    pool:
+      name: Docker Artigas
+
+    environment: Produccion-Artigas
+
+    strategy:
+      runOnce:
+
+        deploy:
+
+          steps:
+
+          - checkout: self
+
+          - script: |
+              echo "=========================================="
+              echo "PRODUCTION RELEASE INFORMATION"
+              echo "=========================================="
+
+              echo "Build ID : $(Build.BuildId)"
+              echo "Commit   : $(Build.SourceVersion)"
+              echo "Branch   : $(Build.SourceBranchName)"
+              echo "Source   : $(Build.SourcesDirectory)"
+
+            displayName: "Release Info PROD"
+
+          - script: |
+              sudo /usr/local/sbin/deploy-agente-ia.sh \
+              "$(Build.SourcesDirectory)/agente_ia_backend" \
+              "$(Build.BuildId)"
+
+            displayName: "Deploy Agente IA PROD Artigas"
+`
