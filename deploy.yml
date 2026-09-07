@@ -88,3 +88,49 @@ stages:
               "$(Build.BuildId)"
 
             displayName: "Deploy Agente IA PROD Artigas"
+
+
+- stage: Deploy_Prod_SanLorenzo
+
+  displayName: "Deploy PROD San Lorenzo"
+
+  dependsOn: Deploy_Prod_Artigas
+
+  condition: succeeded()
+
+  jobs:
+
+  - deployment: DeployAgenteIAProdSL
+
+    pool:
+      name: Docker San Lorenzo
+
+    environment: Produccion-SanLorenzo
+
+    strategy:
+      runOnce:
+
+        deploy:
+
+          steps:
+
+          - checkout: self
+
+          - script: |
+              echo "=========================================="
+              echo "PRODUCTION RELEASE INFORMATION"
+              echo "=========================================="
+
+              echo "Build ID : $(Build.BuildId)"
+              echo "Commit   : $(Build.SourceVersion)"
+              echo "Branch   : $(Build.SourceBranchName)"
+              echo "Source   : $(Build.SourcesDirectory)"
+
+            displayName: "Release Info PROD San Lorenzo"
+
+          - script: |
+              sudo /usr/local/sbin/deploy-agente-ia.sh \
+              "$(Build.SourcesDirectory)/agente_ia_backend" \
+              "$(Build.BuildId)"
+
+            displayName: "Deploy Agente IA PROD San Lorenzo"
