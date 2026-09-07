@@ -1,0 +1,28 @@
+trigger: none
+
+stages:
+
+- stage: Rollback_Prod_SanLorenzo
+
+  displayName: "Rollback PROD San Lorenzo"
+
+  jobs:
+
+  - deployment: RollbackAgenteIA
+
+    pool:
+      name: Docker San Lorenzo
+
+    environment: Produccion-SanLorenzo
+
+    strategy:
+      runOnce:
+
+        deploy:
+
+          steps:
+
+          - script: |
+              sudo /usr/local/sbin/rollback-agente-ia.sh
+
+            displayName: "Rollback Agente IA PROD San Lorenzo"
