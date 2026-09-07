@@ -36,7 +36,7 @@ app.add_middleware(
 def health() -> dict[str, str]:
     return {
         "status": "ok",
-        "version": "1.0.5"
+        "version": "1.0.6"
     }
 
 @app.post("/auth/token", response_model=TokenResponse)
