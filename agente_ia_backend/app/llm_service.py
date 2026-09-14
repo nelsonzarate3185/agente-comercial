@@ -279,6 +279,54 @@ CANTIDADES SUGERIDAS: Si el resultado incluye columnas cant_cliente y cant_vende
 """
 
 
+_ERROR_MARKERS = (
+    "api_connection_error", "rate_limit", "unbound_params",
+    "No se pudo conectar", "Bind variables sin valor",
+    "El modelo generó una consulta con parámetros incompletos",
+    "servicio de IA está temporalmente saturado",
+    "Error al conectar con el agente IA",
+    "Error interno del agente IA",
+    "500 Internal Server Error",
+)
+
+
+def _build_messages(history: list[dict] | None) -> list[dict]:
+    """
+    Convierte el historial APEX en una lista de mensajes válida para la API de Anthropic.
+    Reglas:
+      - Máximo 6 entradas del historial (3 pares user/assistant)
+      - Los mensajes de error de assistant se descartan junto con el user anterior
+      - El primer mensaje DEBE ser "user" (Anthropic lo exige)
+      - No pueden haber dos mensajes consecutivos del mismo role
+    """
+    raw: list[dict] = []
+    for h in (history or [])[-6:]:
+        role = h.get("role", "")
+        content = h.get("content", "") or ""
+        if role not in ("user", "assistant") or not content:
+            continue
+        if role == "assistant" and any(m in content for m in _ERROR_MARKERS):
+            # Intercambio fallido: descartar también el user message previo
+            if raw and raw[-1]["role"] == "user":
+                raw.pop()
+            continue
+        raw.append({"role": role, "content": str(content)[:2000]})
+
+    # Eliminar mensajes de assistant al principio (Anthropic exige empezar con user)
+    while raw and raw[0]["role"] != "user":
+        raw.pop(0)
+
+    # Eliminar pares consecutivos del mismo role (defensa final)
+    messages: list[dict] = []
+    for msg in raw:
+        if messages and messages[-1]["role"] == msg["role"]:
+            messages[-1] = msg   # reemplaza por el más reciente del mismo role
+        else:
+            messages.append(msg)
+
+    return messages
+
+
 def generate_sql(
     question: str,
     context: dict[str, Any],
@@ -290,34 +338,7 @@ def generate_sql(
     """
     client = _get_client()
 
-    messages: list[dict] = []
-
-    # Historial de conversación — últimas 6 entradas (3 pares user/assistant)
-    # Se descartan respuestas de error para no contaminar el contexto del LLM.
-    _error_markers = ("api_connection_error", "rate_limit", "unbound_params",
-                      "No se pudo conectar", "Bind variables sin valor",
-                      "El modelo generó una consulta con parámetros incompletos",
-                      "servicio de IA está temporalmente saturado",
-                      "Error al conectar con el agente IA",
-                      "Error interno del agente IA",
-                      "500 Internal Server Error")
-    if history:
-        for h in history[-6:]:
-            role = h.get("role", "")
-            content = h.get("content", "") or ""
-            if role not in ("user", "assistant") or not content:
-                continue
-            if role == "assistant" and any(m in content for m in _error_markers):
-                # Descartar este error Y el user message anterior (el intercambio falló)
-                if messages and messages[-1]["role"] == "user":
-                    messages.pop()
-                continue
-            messages.append({"role": role, "content": str(content)[:2000]})
-
-    # Anthropic exige que el primer mensaje sea "user".
-    # El greet y otros mensajes de assistant al inicio del historial lo violan.
-    while messages and messages[0]["role"] != "user":
-        messages.pop(0)
+    messages: list[dict] = _build_messages(history)
 
     # Construir mensaje del usuario con contexto
     ctx_parts: list[str] = []
