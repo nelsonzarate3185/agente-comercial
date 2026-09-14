@@ -166,7 +166,7 @@ def chat(payload: ChatRequest, _: None = Depends(require_api_key)) -> ChatRespon
             datos={"error": "api_auth_error"},
         )
     except anthropic.APIStatusError as e:
-        log.error("Anthropic API status error %s: %s", e.status_code, e.message)
+        log.error("Anthropic API status error %s: %s", e.status_code, getattr(e, "message", str(e)))
         return ChatResponse(
             respuesta=(
                 "📊 Resumen:\n"

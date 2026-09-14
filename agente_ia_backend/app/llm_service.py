@@ -297,7 +297,10 @@ def generate_sql(
     _error_markers = ("api_connection_error", "rate_limit", "unbound_params",
                       "No se pudo conectar", "Bind variables sin valor",
                       "El modelo generó una consulta con parámetros incompletos",
-                      "servicio de IA está temporalmente saturado")
+                      "servicio de IA está temporalmente saturado",
+                      "Error al conectar con el agente IA",
+                      "Error interno del agente IA",
+                      "500 Internal Server Error")
     if history:
         for h in history[-6:]:
             role = h.get("role", "")
@@ -307,6 +310,11 @@ def generate_sql(
             if role == "assistant" and any(m in content for m in _error_markers):
                 continue
             messages.append({"role": role, "content": str(content)[:2000]})
+
+    # Anthropic exige que el primer mensaje sea "user".
+    # El greet y otros mensajes de assistant al inicio del historial lo violan.
+    while messages and messages[0]["role"] != "user":
+        messages.pop(0)
 
     # Construir mensaje del usuario con contexto
     ctx_parts: list[str] = []
