@@ -308,6 +308,9 @@ def generate_sql(
             if role not in ("user", "assistant") or not content:
                 continue
             if role == "assistant" and any(m in content for m in _error_markers):
+                # Descartar este error Y el user message anterior (el intercambio falló)
+                if messages and messages[-1]["role"] == "user":
+                    messages.pop()
                 continue
             messages.append({"role": role, "content": str(content)[:2000]})
 
