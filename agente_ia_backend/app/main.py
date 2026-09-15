@@ -166,7 +166,19 @@ def chat(payload: ChatRequest, _: None = Depends(require_api_key)) -> ChatRespon
             datos={"error": "api_auth_error"},
         )
     except anthropic.APIStatusError as e:
-        log.error("Anthropic API status error %s: %s", e.status_code, getattr(e, "message", str(e)))
+        _emsg = getattr(e, "message", str(e))
+        log.error("Anthropic API status error %s: %s", e.status_code, _emsg)
+        _body_str = str(getattr(e, "body", "") or _emsg).lower()
+        if "credit balance" in _body_str or "credits" in _body_str or "billing" in _body_str:
+            return ChatResponse(
+                respuesta=(
+                    "⚠️ El servicio de IA no está disponible en este momento.\n\n"
+                    "El saldo de la cuenta de IA se agotó. "
+                    "Contactá al administrador del sistema para recargar créditos en Anthropic."
+                ),
+                sql_generado=None,
+                datos={"error": "api_no_credits"},
+            )
         return ChatResponse(
             respuesta=(
                 "📊 Resumen:\n"
