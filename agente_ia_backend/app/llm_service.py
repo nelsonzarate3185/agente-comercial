@@ -10,7 +10,7 @@ import json
 import logging
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import anthropic
 
 from .settings import settings
