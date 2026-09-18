@@ -87,7 +87,7 @@ VIEWS: dict[str, dict] = {
         },
         "date_filter_col": "FECHA_INICIO",
     },
-    "INV.V_CLIENTE_APEX": {
+    "INV.V_CLIENTE_agente": {
         "alias": "clientes",
         "description": (
             "Maestro de clientes con indicadores comerciales y financieros. "

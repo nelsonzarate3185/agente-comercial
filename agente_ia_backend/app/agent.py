@@ -66,7 +66,7 @@ def _inject_vendor_filter(sql: str, cod_vendedor: str, params: dict) -> tuple[st
         return sql, params
 
     # No aplica a este SQL (no usa vistas que requieren filtro de vendedor)
-    _vendor_views = ("V_VENTAS_agente", "V_CLIENTE_APEX", "V_PEDIDOS_PRODUCTOS", "V_METAS_VENDEDORES")
+    _vendor_views = ("V_VENTAS_agente", "V_CLIENTE_agente", "V_PEDIDOS_PRODUCTOS", "V_METAS_VENDEDORES")
     if not any(v in sql_upper for v in _vendor_views):
         return sql, params
 
@@ -190,7 +190,7 @@ def handle_chat(
         _raw_cod = str(params["cod_cliente"])
         try:
             _verified = db.query_scalar(
-                "SELECT COD_CLIENTE FROM INV.V_CLIENTE_APEX"
+                "SELECT COD_CLIENTE FROM INV.V_CLIENTE_agente"
                 " WHERE COD_CLIENTE = :c AND ROWNUM = 1",
                 {"c": _raw_cod},
             )
@@ -199,7 +199,7 @@ def handle_chat(
             else:
                 # No es un código válido: intentar como nombre
                 _by_name = db.query_scalar(
-                    "SELECT COD_CLIENTE FROM INV.V_CLIENTE_APEX"
+                    "SELECT COD_CLIENTE FROM INV.V_CLIENTE_agente"
                     " WHERE UPPER(NOMBRE) LIKE UPPER('%'||:n||'%') AND ROWNUM = 1",
                     {"n": _raw_cod},
                 )
@@ -213,7 +213,7 @@ def handle_chat(
     elif params.get("nombre_cliente"):
         try:
             r = db.query_scalar(
-                "SELECT COD_CLIENTE FROM INV.V_CLIENTE_APEX"
+                "SELECT COD_CLIENTE FROM INV.V_CLIENTE_agente"
                 " WHERE UPPER(NOMBRE) LIKE UPPER('%'||:n||'%') AND ROWNUM = 1",
                 {"n": str(params["nombre_cliente"])},
             )
@@ -430,7 +430,7 @@ def handle_greet(
 
     try:
         sql_c = (
-            "SELECT COUNT(*) AS CNT FROM INV.V_CLIENTE_APEX"
+            "SELECT COUNT(*) AS CNT FROM INV.V_CLIENTE_agente"
             " WHERE ESTADO = 'ACTIVO'"
             " AND FEC_ULTIMA_COMPRA < TRUNC(SYSDATE) - 60"
             " AND COD_VENDEDOR IS NOT NULL"
