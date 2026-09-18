@@ -5,7 +5,7 @@ Estructura real del esquema INV en Oracle 12c.
 from __future__ import annotations
 
 VIEWS: dict[str, dict] = {
-    "INV.V_VENTAS_APEX": {
+    "INV.V_VENTAS_agente": {
         "alias": "ventas",
         "description": (
             "Líneas de ventas y facturación. Cada fila es un artículo vendido en un comprobante. "
@@ -25,8 +25,8 @@ VIEWS: dict[str, dict] = {
             "COD_VENDEDOR":        "VARCHAR2 – Código del vendedor responsable",
             "NOMBRE_VENDEDOR":     "VARCHAR2 – Nombre completo del vendedor",
             "COD_EMPRESA":         "VARCHAR2 – Código de empresa (SIEMPRE filtrar por esto si existe en contexto)",
-            "COD_DIVISION":        "VARCHAR2 – División comercial (solo código; DESC_DIVISION NO existe en esta vista, está en V_STOCK_APEX)",
-            "COD_FAMILIA":         "VARCHAR2 – Familia de producto (solo código; DESC_FAMILIA NO existe en esta vista, está en V_STOCK_APEX)",
+            "COD_DIVISION":        "VARCHAR2 – División comercial (solo código; DESC_DIVISION NO existe en esta vista, está en V_STOCK_agente)",
+            "COD_FAMILIA":         "VARCHAR2 – Familia de producto (solo código; DESC_FAMILIA NO existe en esta vista, está en V_STOCK_agente)",
             "COD_CATEGORIA":       "VARCHAR2 – Categoría de producto (solo código)",
             "COD_MARCA":           "VARCHAR2 – Código de marca",
             "DESC_MARCA":          "VARCHAR2 – Nombre de la marca",
@@ -35,7 +35,7 @@ VIEWS: dict[str, dict] = {
         },
         "date_filter_col": "FEC_FACTURA",
     },
-    "INV.V_STOCK_APEX": {
+    "INV.V_STOCK_agente": {
         "alias": "stock",
         "description": (
             "Stock disponible por artículo y sucursal. "
@@ -49,7 +49,7 @@ VIEWS: dict[str, dict] = {
             "DESC_ARTICULO":           "VARCHAR2 – Descripción del artículo",
             "CANT_DISPON":             "NUMBER   – Cantidad disponible en stock (columna clave)",
             "COSTO_PROMEDIO_UNITARIO": "NUMBER   – Costo promedio por unidad",
-            "MARCA":                   "VARCHAR2 – Marca del artículo (columna se llama MARCA, NO DESC_MARCA — ese nombre solo existe en V_VENTAS_APEX)",
+            "MARCA":                   "VARCHAR2 – Marca del artículo (columna se llama MARCA, NO DESC_MARCA — ese nombre solo existe en V_VENTAS_agente)",
             "COD_ART_CORTO":           "VARCHAR2 – Código corto del artículo (preferir sobre COD_ARTICULO; puede estar vacío)",
             "DESC_CATEGOGIRA":         "VARCHAR2 – Categoría del artículo",
             "DESC_FAMILIA":            "VARCHAR2 – Familia de producto",
@@ -168,7 +168,7 @@ VIEWS: dict[str, dict] = {
             "Órdenes de trabajo (OT) / reparaciones de artículos de clientes. "
             "Usar para: OTs pendientes de reparación, OTs en garantía, tiempo sin reparar, "
             "OTs ingresadas en un período. NO tiene COD_VENDEDOR — filtrar vendedor vía "
-            "subquery de clientes sobre V_VENTAS_APEX."
+            "subquery de clientes sobre V_VENTAS_agente."
         ),
         "columns": {
             "OT":               "VARCHAR2 – Número de la orden de trabajo",

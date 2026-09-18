@@ -66,7 +66,7 @@ def _inject_vendor_filter(sql: str, cod_vendedor: str, params: dict) -> tuple[st
         return sql, params
 
     # No aplica a este SQL (no usa vistas que requieren filtro de vendedor)
-    _vendor_views = ("V_VENTAS_APEX", "V_CLIENTE_APEX", "V_PEDIDOS_PRODUCTOS", "V_METAS_VENDEDORES")
+    _vendor_views = ("V_VENTAS_agente", "V_CLIENTE_APEX", "V_PEDIDOS_PRODUCTOS", "V_METAS_VENDEDORES")
     if not any(v in sql_upper for v in _vendor_views):
         return sql, params
 
@@ -350,11 +350,11 @@ def handle_greet(
         except Exception as e:
             log.warning("GREET | V_EMPLEADOS error: %s", e)
 
-    # Estrategia B (fallback): NOMBRE_VENDEDOR desde V_VENTAS_APEX usando cod_vendedor
+    # Estrategia B (fallback): NOMBRE_VENDEDOR desde V_VENTAS_agente usando cod_vendedor
     if not nombre and cod_vendedor:
         try:
             r = db.query(
-                "SELECT NOMBRE_VENDEDOR FROM INV.V_VENTAS_APEX"
+                "SELECT NOMBRE_VENDEDOR FROM INV.V_VENTAS_agente"
                 " WHERE COD_VENDEDOR = :cod_vendedor AND COD_EMPRESA = :cod_empresa AND ROWNUM = 1",
                 {"cod_vendedor": cod_vendedor, "cod_empresa": cod_empresa},
                 max_rows=1,
@@ -365,7 +365,7 @@ def handle_greet(
                     nombre = str(val).strip().title()
             log.info("GREET | NOMBRE_VENDEDOR fallback → nombre=%s", nombre)
         except Exception as e:
-            log.warning("GREET | V_VENTAS_APEX error: %s", e)
+            log.warning("GREET | V_VENTAS_agente error: %s", e)
 
     nombre_mostrar = nombre or usuario or "vendedor"
 
@@ -382,7 +382,7 @@ def handle_greet(
 
     try:
         sql_v = (
-            "SELECT NVL(SUM(MONTO), 0) AS TOTAL FROM INV.V_VENTAS_APEX"
+            "SELECT NVL(SUM(MONTO), 0) AS TOTAL FROM INV.V_VENTAS_agente"
             " WHERE COD_EMPRESA = :cod_empresa"
             " AND TIP_COMPROBANTE IN ('FCR','FCO')"
             " AND FEC_FACTURA >= TRUNC(SYSDATE)"
@@ -399,7 +399,7 @@ def handle_greet(
 
     try:
         sql_vm = (
-            "SELECT NVL(SUM(MONTO), 0) AS TOTAL FROM INV.V_VENTAS_APEX"
+            "SELECT NVL(SUM(MONTO), 0) AS TOTAL FROM INV.V_VENTAS_agente"
             " WHERE COD_EMPRESA = :cod_empresa"
             " AND TIP_COMPROBANTE IN ('FCR','FCO')"
             " AND FEC_FACTURA >= TRUNC(SYSDATE, 'MM')"
@@ -417,7 +417,7 @@ def handle_greet(
     try:
         r = db.query(
             "SELECT COUNT(*) AS CNT FROM ("
-            "SELECT COD_ARTICULO FROM INV.V_STOCK_APEX"
+            "SELECT COD_ARTICULO FROM INV.V_STOCK_agente"
             " WHERE COD_EMPRESA = :cod_empresa AND COD_RUBRO = 'PR'"
             " GROUP BY COD_ARTICULO HAVING SUM(CANT_DISPON) <= 5)",
             {"cod_empresa": cod_empresa},
@@ -452,7 +452,7 @@ def handle_greet(
                 "SELECT m.MONTO_META,"
                 " NVL(SUM(v.MONTO), 0) AS ventas_reales"
                 " FROM INV.V_METAS_VENDEDORES m"
-                " LEFT JOIN INV.V_VENTAS_APEX v"
+                " LEFT JOIN INV.V_VENTAS_agente v"
                 "   ON v.COD_VENDEDOR = m.COD_VENDEDOR"
                 "  AND v.COD_EMPRESA = m.COD_EMPRESA"
                 "  AND v.TIP_COMPROBANTE IN ('FCR','FCO')"

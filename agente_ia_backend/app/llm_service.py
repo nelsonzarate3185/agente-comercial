@@ -73,45 +73,45 @@ REGLAS OBLIGATORIAS — NUNCA las violes:
    ⛔ No uses DISTINCT junto a GROUP BY — son mutuamente excluyentes; usa solo GROUP BY.
 8. Para JOINs usa los campos comunes: COD_ARTICULO, COD_CLIENTE, COD_VENDEDOR entre vistas.
 9. Cuando se pide "top N" sin número, usa 10. Cuando se pide comparativa, usa subconsultas o CASE.
-10. Preguntas de cruce de datos (ej: "alta demanda + bajo stock"): JOIN entre V_VENTAS_APEX y V_STOCK_APEX por COD_ARTICULO.
-    ⛔ COLUMNAS EXCLUSIVAS DE V_STOCK_APEX — NO existen en V_VENTAS_APEX: DESC_FAMILIA, DESC_DIVISION, DESC_CATEGOGIRA, CANT_DISPON, COSTO_PROMEDIO_UNITARIO, MARCA, FACTURABLE.
+10. Preguntas de cruce de datos (ej: "alta demanda + bajo stock"): JOIN entre V_VENTAS_agente y V_STOCK_agente por COD_ARTICULO.
+    ⛔ COLUMNAS EXCLUSIVAS DE V_STOCK_agente — NO existen en V_VENTAS_agente: DESC_FAMILIA, DESC_DIVISION, DESC_CATEGOGIRA, CANT_DISPON, COSTO_PROMEDIO_UNITARIO, MARCA, FACTURABLE.
     En un JOIN siempre referencia estas columnas con el alias del stock (ej: s.DESC_FAMILIA, s.CANT_DISPON), nunca con el alias de ventas (v.DESC_FAMILIA es INVÁLIDO).
-    Para stock en JOINs usa SUM(s.CANT_DISPON) —no MAX— porque V_STOCK_APEX tiene una fila por sucursal.
+    Para stock en JOINs usa SUM(s.CANT_DISPON) —no MAX— porque V_STOCK_agente tiene una fila por sucursal.
     ⛔ CRÍTICO JOIN+STOCK: SUM(s.CANT_DISPON) es una función de agregado — NUNCA la pongas en WHERE. Va SIEMPRE en HAVING:
     ✅ GROUP BY ... HAVING SUM(s.CANT_DISPON) > 0   ← CORRECTO
     ❌ WHERE SUM(s.CANT_DISPON) > 0                 ← ORA-00934, INVÁLIDO
     ⛔ MARCA vs DESC_MARCA — ERROR CRÍTICO FRECUENTE:
-    V_STOCK_APEX tiene la columna MARCA (sin prefijo). V_VENTAS_APEX tiene DESC_MARCA.
-    ✅ s.MARCA          ← CORRECTO cuando s es alias de V_STOCK_APEX
-    ❌ s.DESC_MARCA     ← ORA-00904 INVÁLIDO — la columna DESC_MARCA NO EXISTE en V_STOCK_APEX
-    En todo JOIN con V_STOCK_APEX: usa SIEMPRE s.MARCA, nunca s.DESC_MARCA.
+    V_STOCK_agente tiene la columna MARCA (sin prefijo). V_VENTAS_agente tiene DESC_MARCA.
+    ✅ s.MARCA          ← CORRECTO cuando s es alias de V_STOCK_agente
+    ❌ s.DESC_MARCA     ← ORA-00904 INVÁLIDO — la columna DESC_MARCA NO EXISTE en V_STOCK_agente
+    En todo JOIN con V_STOCK_agente: usa SIEMPRE s.MARCA, nunca s.DESC_MARCA.
 11. TIP_COMPROBANTE CRÍTICO — NUNCA uses 'FT'. Los valores correctos son: 'FCR' y 'FCO' para ventas reales, 'NCR' para notas de crédito. Para analizar ventas SIEMPRE filtra: AND TIP_COMPROBANTE IN ('FCR','FCO')
-12. Para filtrar stock por "rubro" o tipo de producto, usa DESC_DIVISION en INV.V_STOCK_APEX. Valores típicos: 'PRODUCTOS', 'REPUESTOS'. DESC_FAMILIA para subfamilia.
+12. Para filtrar stock por "rubro" o tipo de producto, usa DESC_DIVISION en INV.V_STOCK_agente. Valores típicos: 'PRODUCTOS', 'REPUESTOS'. DESC_FAMILIA para subfamilia.
 13. Para promociones vigentes: AND FECHA_INICIO <= TRUNC(SYSDATE) AND FECHA_FIN >= TRUNC(SYSDATE). PROMO_MIX='S' son promos mix, 'N' son normales. Filtrar COD_EMPRESA_PROMO = :cod_empresa si está en contexto.
-14. ⛔ RESTRICCIÓN CRÍTICA DE VENDEDOR: Si el contexto incluye cod_vendedor, DEBES agregar AND COD_VENDEDOR = :P_COD_VENDEDOR en TODAS las consultas sobre V_VENTAS_APEX, V_CLIENTE_APEX, V_PEDIDOS_PRODUCTOS y V_METAS_VENDEDORES. Esta restricción es obligatoria e innegociable — garantiza que el vendedor solo vea sus propios datos. Omitirla es un error grave. NO incluyas P_COD_VENDEDOR en el JSON de params, el backend lo inyecta automáticamente. Si el usuario menciona el nombre de un vendedor (ej: "vendedor García"), usa UPPER(NOMBRE_VENDEDOR) LIKE UPPER('%'||:nombre_vend||'%') en el WHERE y agrega {{"nombre_vend": "<nombre>"}} a params.
-15. V_STOCK_APEX tiene una fila por sucursal. SIEMPRE agrupa y suma. ⛔ NUNCA uses SUM/COUNT/AVG/MIN/MAX en el WHERE — van en HAVING. ⛔ NUNCA uses SUM/MAX/MIN/AVG en ORDER BY — usá el alias del SELECT. Patrón OBLIGATORIO para stock crítico:
+14. ⛔ RESTRICCIÓN CRÍTICA DE VENDEDOR: Si el contexto incluye cod_vendedor, DEBES agregar AND COD_VENDEDOR = :P_COD_VENDEDOR en TODAS las consultas sobre V_VENTAS_agente, V_CLIENTE_APEX, V_PEDIDOS_PRODUCTOS y V_METAS_VENDEDORES. Esta restricción es obligatoria e innegociable — garantiza que el vendedor solo vea sus propios datos. Omitirla es un error grave. NO incluyas P_COD_VENDEDOR en el JSON de params, el backend lo inyecta automáticamente. Si el usuario menciona el nombre de un vendedor (ej: "vendedor García"), usa UPPER(NOMBRE_VENDEDOR) LIKE UPPER('%'||:nombre_vend||'%') en el WHERE y agrega {{"nombre_vend": "<nombre>"}} a params.
+15. V_STOCK_agente tiene una fila por sucursal. SIEMPRE agrupa y suma. ⛔ NUNCA uses SUM/COUNT/AVG/MIN/MAX en el WHERE — van en HAVING. ⛔ NUNCA uses SUM/MAX/MIN/AVG en ORDER BY — usá el alias del SELECT. Patrón OBLIGATORIO para stock crítico:
 SELECT COD_ARTICULO AS CODIGO, DESC_ARTICULO, SUM(CANT_DISPON) AS cant_dispon_total
-FROM INV.V_STOCK_APEX
+FROM INV.V_STOCK_agente
 WHERE COD_EMPRESA = :cod_empresa AND COD_RUBRO = 'PR'
 GROUP BY COD_ARTICULO, DESC_ARTICULO
 HAVING SUM(CANT_DISPON) <= 5
 ORDER BY cant_dispon_total
 FETCH FIRST 20 ROWS ONLY
 Agrega al GROUP BY cualquier columna descriptiva adicional que uses en el SELECT.
-16. V_STOCK_APEX — SIEMPRE agrega AND COD_RUBRO = 'PR' al WHERE (filtra solo productos comercializables). Ejemplo: WHERE COD_EMPRESA = :cod_empresa AND COD_RUBRO = 'PR'. En el SELECT usa COD_ARTICULO AS CODIGO para retornar el código del artículo. ⛔ NUNCA uses COD_ART_CORTO como identificador — el código correcto siempre es COD_ARTICULO.
+16. V_STOCK_agente — SIEMPRE agrega AND COD_RUBRO = 'PR' al WHERE (filtra solo productos comercializables). Ejemplo: WHERE COD_EMPRESA = :cod_empresa AND COD_RUBRO = 'PR'. En el SELECT usa COD_ARTICULO AS CODIGO para retornar el código del artículo. ⛔ NUNCA uses COD_ART_CORTO como identificador — el código correcto siempre es COD_ARTICULO.
 17. V_CLIENTE_APEX — los valores válidos del campo ESTADO son exactamente: 'ACTIVO', 'INACTIVO', 'BLOQUEADO', 'CREDITO BLOQUEADO'. Nunca uses 'A', 'B' ni otros valores. Para clientes activos: ESTADO = 'ACTIVO'. Para bloqueados: ESTADO IN ('BLOQUEADO','CREDITO BLOQUEADO'). Para inactivos: ESTADO = 'INACTIVO'.
 18. NOMBRES EN FILTROS — Si el usuario menciona un cliente (ej: "ZEIN SRL", "García"), usa bind variable y agrega el valor al JSON params:
    - Cliente: UPPER(NOMBRE) LIKE UPPER('%'||:nombre_cliente||'%') → params: {{"nombre_cliente": "ZEIN SRL"}}
    - Artículo: UPPER(DESC_ARTICULO) LIKE UPPER('%'||:nombre_art||'%') → params: {{"nombre_art": "ACEITE"}}
    ⛔ NUNCA dejes un bind variable (:variable) en el SQL sin su correspondiente entrada en params. Todos los :variable del SQL DEBEN estar en params.
    ✅ CRÍTICO — CLIENTE ESPECÍFICO: Cuando el SQL filtra por un cliente concreto (NOMBRE LIKE :nombre_cliente o COD_CLIENTE = :cod_cliente), SIEMPRE incluye MIN(COD_CLIENTE) AS cod_cliente en el SELECT principal. Esto es obligatorio para que el frontend pueda crear pedidos. Si hay GROUP BY, agrega MIN(COD_CLIENTE) AS cod_cliente al SELECT. Si no hay GROUP BY, agrega COD_CLIENTE al SELECT y al GROUP BY.
-19. METAS DE VENDEDOR (V_METAS_VENDEDORES) — Para calcular cumplimiento de meta cruzá con V_VENTAS_APEX. Patrón OBLIGATORIO:
+19. METAS DE VENDEDOR (V_METAS_VENDEDORES) — Para calcular cumplimiento de meta cruzá con V_VENTAS_agente. Patrón OBLIGATORIO:
 SELECT m.MONTO_META,
        NVL(SUM(v.MONTO), 0) AS ventas_reales,
        ROUND(NVL(SUM(v.MONTO), 0) / NULLIF(m.MONTO_META, 0) * 100, 1) AS pct_cumplimiento,
        GREATEST(m.MONTO_META - NVL(SUM(v.MONTO), 0), 0) AS falta_para_meta
 FROM INV.V_METAS_VENDEDORES m
-LEFT JOIN INV.V_VENTAS_APEX v
+LEFT JOIN INV.V_VENTAS_agente v
   ON v.COD_VENDEDOR = m.COD_VENDEDOR
  AND v.COD_EMPRESA = m.COD_EMPRESA
  AND v.TIP_COMPROBANTE IN ('FCR','FCO','NCR')
@@ -136,18 +136,18 @@ Si no hay cod_vendedor en contexto (gerente viendo todos), omitir el AND COD_VEN
       FROM (SELECT DISTINCT COD_ARTICULO FROM INV.V_PEDIDOS_PRODUCTOS WHERE ...)
    ❌ STRING_AGG(DISTINCT COD_ARTICULO, ', ') — INVÁLIDO en Oracle
    ❌ LISTAGG(DISTINCT COD_ARTICULO, ', ') WITHIN GROUP (...) — INVÁLIDO en Oracle 12c
-22. ⛔ EXCLUSIÓN PROMOS OBLIGATORIA: En TODAS las consultas de sugerencias de venta/compra y top productos, agrega en V_STOCK_APEX: AND UPPER(NVL(DESC_DIVISION,'')) != 'PROMOS'. En V_VENTAS_APEX no hay DESC_DIVISION (solo COD_DIVISION código), omitir ahí. Esta exclusión es siempre obligatoria.
+22. ⛔ EXCLUSIÓN PROMOS OBLIGATORIA: En TODAS las consultas de sugerencias de venta/compra y top productos, agrega en V_STOCK_agente: AND UPPER(NVL(DESC_DIVISION,'')) != 'PROMOS'. En V_VENTAS_agente no hay DESC_DIVISION (solo COD_DIVISION código), omitir ahí. Esta exclusión es siempre obligatoria.
 23. MÓDULO CLIENTES — MAYORISTAS: Para "Ranking de compras de clientes", "Clientes mayoristas activos sin compras este mes/semana" y "¿A quién debería visitar hoy?", SIEMPRE filtrar en V_CLIENTE_APEX:
    AND TIPO_CLIENTE IN ('MAYORISTA A','MAYORISTA B','MAYORISTA C','CORPORATIVOS','GASTRONOMIA','SUPERMERCADO','MAYORISTA-GASTRONOMIA')
    AND ESTADO = 'ACTIVO'
    Patrones:
-   ● "Ranking de compras de clientes": SELECT c.COD_CLIENTE, c.NOMBRE, NVL(SUM(v.MONTO),0) AS monto_compra, MAX(v.FEC_FACTURA) AS ultima_compra FROM INV.V_CLIENTE_APEX c LEFT JOIN INV.V_VENTAS_APEX v ON v.COD_CLIENTE=c.COD_CLIENTE AND v.COD_EMPRESA=:cod_empresa AND v.TIP_COMPROBANTE IN ('FCR','FCO') [AND v.COD_VENDEDOR=:P_COD_VENDEDOR] WHERE c.COD_EMPRESA=:cod_empresa AND c.TIPO_CLIENTE IN (...) AND c.ESTADO='ACTIVO' [AND c.COD_VENDEDOR=:P_COD_VENDEDOR] GROUP BY c.COD_CLIENTE,c.NOMBRE ORDER BY monto_compra DESC FETCH FIRST 20 ROWS ONLY
-   ● "Clientes mayoristas activos sin compras este mes": SELECT COD_CLIENTE,NOMBRE,FEC_ULTIMA_COMPRA FROM INV.V_CLIENTE_APEX WHERE COD_EMPRESA=:cod_empresa AND TIPO_CLIENTE IN (...) AND ESTADO='ACTIVO' [AND COD_VENDEDOR=:P_COD_VENDEDOR] AND COD_CLIENTE NOT IN (SELECT DISTINCT COD_CLIENTE FROM INV.V_VENTAS_APEX WHERE COD_EMPRESA=:cod_empresa AND TIP_COMPROBANTE IN ('FCR','FCO') [AND COD_VENDEDOR=:P_COD_VENDEDOR] AND FEC_FACTURA>=TRUNC(SYSDATE,'MM')) ORDER BY FEC_ULTIMA_COMPRA ASC FETCH FIRST 20 ROWS ONLY
+   ● "Ranking de compras de clientes": SELECT c.COD_CLIENTE, c.NOMBRE, NVL(SUM(v.MONTO),0) AS monto_compra, MAX(v.FEC_FACTURA) AS ultima_compra FROM INV.V_CLIENTE_APEX c LEFT JOIN INV.V_VENTAS_agente v ON v.COD_CLIENTE=c.COD_CLIENTE AND v.COD_EMPRESA=:cod_empresa AND v.TIP_COMPROBANTE IN ('FCR','FCO') [AND v.COD_VENDEDOR=:P_COD_VENDEDOR] WHERE c.COD_EMPRESA=:cod_empresa AND c.TIPO_CLIENTE IN (...) AND c.ESTADO='ACTIVO' [AND c.COD_VENDEDOR=:P_COD_VENDEDOR] GROUP BY c.COD_CLIENTE,c.NOMBRE ORDER BY monto_compra DESC FETCH FIRST 20 ROWS ONLY
+   ● "Clientes mayoristas activos sin compras este mes": SELECT COD_CLIENTE,NOMBRE,FEC_ULTIMA_COMPRA FROM INV.V_CLIENTE_APEX WHERE COD_EMPRESA=:cod_empresa AND TIPO_CLIENTE IN (...) AND ESTADO='ACTIVO' [AND COD_VENDEDOR=:P_COD_VENDEDOR] AND COD_CLIENTE NOT IN (SELECT DISTINCT COD_CLIENTE FROM INV.V_VENTAS_agente WHERE COD_EMPRESA=:cod_empresa AND TIP_COMPROBANTE IN ('FCR','FCO') [AND COD_VENDEDOR=:P_COD_VENDEDOR] AND FEC_FACTURA>=TRUNC(SYSDATE,'MM')) ORDER BY FEC_ULTIMA_COMPRA ASC FETCH FIRST 20 ROWS ONLY
    ● "Clientes mayoristas activos sin compras esta semana": igual pero FEC_FACTURA>=TRUNC(SYSDATE,'IW')
    ● "¿A quién debería visitar hoy?": SELECT COD_CLIENTE,NOMBRE,FEC_ULTIMA_COMPRA,VENTA_MES AS monto_historico FROM INV.V_CLIENTE_APEX WHERE COD_EMPRESA=:cod_empresa AND TIPO_CLIENTE IN (...) AND ESTADO='ACTIVO' [AND COD_VENDEDOR=:P_COD_VENDEDOR] ORDER BY FEC_ULTIMA_COMPRA ASC,monto_historico DESC FETCH FIRST 10 ROWS ONLY
 24. NOTAS DE CRÉDITO: Para "¿Qué notas de crédito tuve este mes?", filtrar TIP_COMPROBANTE='NCR' (NO 'FCR'/'FCO'). Patrón:
    SELECT COD_CLIENTE, NOMBRE, NRO_COMPROBANTE AS nro_nc, FEC_FACTURA, SUM(MONTO) AS monto_nc
-   FROM INV.V_VENTAS_APEX
+   FROM INV.V_VENTAS_agente
    WHERE COD_EMPRESA=:cod_empresa AND TIP_COMPROBANTE='NCR'
      AND FEC_FACTURA>=TRUNC(SYSDATE,'MM') [AND COD_VENDEDOR=:P_COD_VENDEDOR]
    GROUP BY COD_CLIENTE,NOMBRE,NRO_COMPROBANTE,FEC_FACTURA
@@ -165,27 +165,27 @@ Si no hay cod_vendedor en contexto (gerente viendo todos), omitir el AND COD_VEN
    Patrón cuando el cliente se identifica por NOMBRE (caso más común):
    SELECT v.COD_ARTICULO, MAX(v.DESC_ARTICULO) AS desc_articulo,
      MIN(v.COD_CLIENTE) AS cod_cliente,
-     NVL((SELECT AVG(CANTIDAD) FROM INV.V_VENTAS_APEX
+     NVL((SELECT AVG(CANTIDAD) FROM INV.V_VENTAS_agente
           WHERE COD_ARTICULO=v.COD_ARTICULO
             AND COD_CLIENTE IN (SELECT COD_CLIENTE FROM INV.V_CLIENTE_APEX WHERE UPPER(NOMBRE) LIKE UPPER('%'||:nombre_cliente||'%') AND ROWNUM=1)
             AND COD_EMPRESA=:cod_empresa AND TIP_COMPROBANTE IN ('FCR','FCO')
             AND FEC_FACTURA>=ADD_MONTHS(TRUNC(SYSDATE,'MM'),-3)),0) AS cant_cliente,
      NVL(AVG(v.CANTIDAD),0) AS cant_vendedor
-   FROM INV.V_VENTAS_APEX v
+   FROM INV.V_VENTAS_agente v
    WHERE v.COD_EMPRESA=:cod_empresa AND v.TIP_COMPROBANTE IN ('FCR','FCO')
      AND v.FEC_FACTURA>=ADD_MONTHS(TRUNC(SYSDATE,'MM'),-3)
      AND v.COD_CLIENTE IN (SELECT COD_CLIENTE FROM INV.V_CLIENTE_APEX WHERE UPPER(NOMBRE) LIKE UPPER('%'||:nombre_cliente||'%') AND ROWNUM=1)
      [AND v.COD_VENDEDOR=:P_COD_VENDEDOR]
    GROUP BY v.COD_ARTICULO ORDER BY cant_vendedor DESC FETCH FIRST 14 ROWS ONLY
    params: {{"nombre_cliente": "WILMAR S.R.L."}}  ← SIEMPRE nombre_cliente cuando el usuario da un nombre
-   ⛔ NO hagas JOIN con V_STOCK_APEX en este patrón — solo V_VENTAS_APEX.
-   ❌ FROM INV.V_VENTAS_APEX v LEFT JOIN INV.V_STOCK_APEX s ON ...  ← INVÁLIDO aquí
-   ✅ Solo FROM INV.V_VENTAS_APEX v — sin ningún JOIN a stock.
-   Si necesitás stock como dato adicional, usá subconsulta escalar: (SELECT SUM(CANT_DISPON) FROM INV.V_STOCK_APEX WHERE COD_ARTICULO=v.COD_ARTICULO AND COD_EMPRESA=:cod_empresa AND COD_RUBRO='PR') AS stock_dispon
-   Nunca columnas de V_STOCK_APEX (s.MARCA, s.DESC_FAMILIA, s.CANT_DISPON) en el SELECT principal de este patrón — no hay alias 's'.
+   ⛔ NO hagas JOIN con V_STOCK_agente en este patrón — solo V_VENTAS_agente.
+   ❌ FROM INV.V_VENTAS_agente v LEFT JOIN INV.V_STOCK_agente s ON ...  ← INVÁLIDO aquí
+   ✅ Solo FROM INV.V_VENTAS_agente v — sin ningún JOIN a stock.
+   Si necesitás stock como dato adicional, usá subconsulta escalar: (SELECT SUM(CANT_DISPON) FROM INV.V_STOCK_agente WHERE COD_ARTICULO=v.COD_ARTICULO AND COD_EMPRESA=:cod_empresa AND COD_RUBRO='PR') AS stock_dispon
+   Nunca columnas de V_STOCK_agente (s.MARCA, s.DESC_FAMILIA, s.CANT_DISPON) en el SELECT principal de este patrón — no hay alias 's'.
 26. ⛔ NUNCA repitas el mismo COD_ARTICULO en resultados de sugerencias. Usá GROUP BY COD_ARTICULO para garantizar una sola fila por artículo.
 27. ÓRDENES DE TRABAJO (OT / Reparaciones) — Vista: INV.V_ORDENES_TRABAJO_CLIENTES (alias ot).
-   NO tiene COD_VENDEDOR. Filtro de vendedor: subquery sobre V_VENTAS_APEX [solo si hay cod_vendedor en contexto].
+   NO tiene COD_VENDEDOR. Filtro de vendedor: subquery sobre V_VENTAS_agente [solo si hay cod_vendedor en contexto].
    SIEMPRE agregar AND ot.COD_EMPRESA = :cod_empresa.
    FETCH FIRST 20 ROWS ONLY en todas.
    COLUMNAS ESTÁNDAR: ot.OT, ot.ESTADO_OT, ot.COD_CLIENTE, ot.NOM_CLIENTE, ot.FECHA_INGRESO, ot.FECHA_REPARACION, ot.COD_ARTICULO.
@@ -197,7 +197,7 @@ Si no hay cod_vendedor en contexto (gerente viendo todos), omitir el AND COD_VEN
      FROM INV.V_ORDENES_TRABAJO_CLIENTES ot
      WHERE ot.COD_EMPRESA=:cod_empresa
        AND ot.FECHA_REPARACION IS NULL
-       [AND ot.COD_CLIENTE IN (SELECT DISTINCT COD_CLIENTE FROM INV.V_VENTAS_APEX WHERE COD_VENDEDOR=:P_COD_VENDEDOR AND COD_EMPRESA=:cod_empresa AND TIP_COMPROBANTE IN ('FCR','FCO'))]
+       [AND ot.COD_CLIENTE IN (SELECT DISTINCT COD_CLIENTE FROM INV.V_VENTAS_agente WHERE COD_VENDEDOR=:P_COD_VENDEDOR AND COD_EMPRESA=:cod_empresa AND TIP_COMPROBANTE IN ('FCR','FCO'))]
      ORDER BY ot.FECHA_INGRESO ASC FETCH FIRST 20 ROWS ONLY
 
    ● "¿Qué OTs reparadas y no retiradas tienen mis clientes?":
@@ -206,7 +206,7 @@ Si no hay cod_vendedor en contexto (gerente viendo todos), omitir el AND COD_VEN
      FROM INV.V_ORDENES_TRABAJO_CLIENTES ot
      WHERE ot.COD_EMPRESA=:cod_empresa
        AND ot.FECHA_REPARACION IS NOT NULL
-       [AND ot.COD_CLIENTE IN (SELECT DISTINCT COD_CLIENTE FROM INV.V_VENTAS_APEX WHERE COD_VENDEDOR=:P_COD_VENDEDOR AND COD_EMPRESA=:cod_empresa AND TIP_COMPROBANTE IN ('FCR','FCO'))]
+       [AND ot.COD_CLIENTE IN (SELECT DISTINCT COD_CLIENTE FROM INV.V_VENTAS_agente WHERE COD_VENDEDOR=:P_COD_VENDEDOR AND COD_EMPRESA=:cod_empresa AND TIP_COMPROBANTE IN ('FCR','FCO'))]
      ORDER BY ot.FECHA_REPARACION ASC FETCH FIRST 20 ROWS ONLY
 
    ● "¿Qué OTs ingresaron este mes?":

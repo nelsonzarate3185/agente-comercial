@@ -28,7 +28,7 @@ prompt APPLICATION 122 - Kairos
 -- Application Export:
 --   Application:     122
 --   Name:            Kairos
---   Date and Time:   10:42 Thursday September 3, 2026
+--   Date and Time:   16:44 Thursday September 17, 2026
 --   Exported By:     NZARATE
 --   Flashback:       0
 --   Export Type:     Page Export
@@ -984,13 +984,16 @@ wwv_flow_imp_page.create_page_da_action(
 'm=m.toUpperCase();var hist=getC().slice(-6);app(''user'',m);',
 'if(btn){btn.disabled=true;btn.textContent=''...'';}',
 'var _c={cod_empresa:apex.item(''P233_COD_EMPRESA'').getValue(),cod_vendedor:apex.item(''P233_COD_VENDEDOR_PAG0'').getValue(),ver_otros_vendedores:apex.item(''P233_VER_OTROS_VENDEDORES'').getValue(),periodo:''mes''};',
-'fetch(API,{method:''POST'',headers:{''Content-Type'':''application/json'',''X-API-Key'':''testing123''},',
+'var _ctrl=new AbortController();',
+'var _tim=setTimeout(function(){_ctrl.abort();},90000);',
+'fetch(API,{signal:_ctrl.signal,method:''POST'',headers:{''Content-Type'':''application/json'',''X-API-Key'':''testing123''},',
 'body:JSON.stringify({mensaje:m,usuario:''&APP_USER.'',contexto:_c,historial:hist})})',
-'.then(function(r){if(!r.ok)throw r.status;return r.json();})',
+'.then(function(r){if(!r.ok)throw new Error(''HTTP ''+r.status);return r.json();})',
 '.then(function(j){app(''assistant'',j&&j.respuesta?j.respuesta:''Sin respuesta.'');',
 'if(j&&j.datos&&j.datos.filas&&j.datos.filas.length){lastDatos=j.datos;doExcel();CSV.style.display=''block'';}',
-'else{lastDatos=null;CSV.style.display=''none'';}}).catch(function(){app(''assistant'',''Error al conectar con el agente IA.'');})',
-'.finally(function(){if(btn){btn.disabled=false;btn.textContent=''Enviar'';}});}',
+'else{lastDatos=null;CSV.style.display=''none'';}}).catch(function(e){',
+'app(''assistant'',e&&e.name===''AbortError''?''Tiempo agotado (>90s), intentá de nuevo.'':!navigator.onLine?''Sin conexión a Internet.'':''Error al conectar con el agente IA.'');})',
+'.finally(function(){clearTimeout(_tim);if(btn){btn.disabled=false;btn.textContent=''Enviar'';}});}',
 'B=d.getElementById(''aiBtn_233'');P=d.getElementById(''aiPan_233'');',
 'inp=d.getElementById(''aiI_233'');btn=d.getElementById(''aiS_233'');',
 'CSV=d.getElementById(''aiCSV_233'');lnk=d.getElementById(''aiCSVLnk'');',
@@ -1196,138 +1199,6 @@ wwv_flow_imp_page.create_page_process(
 '  APEX_JSON.CLOSE_OBJECT;',
 'END;'))
 ,p_process_clob_language=>'PLSQL'
-);
-end;
-/
-begin
--- ── Items ocultos para autenticación JWT ──────────────────────────────────
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(990000000000001233)
-,p_name=>'P233_NOMBRE_USUARIO'
-,p_item_sequence=>170
-,p_item_plug_id=>wwv_flow_imp.id(263386391525028467)
-,p_display_as=>'NATIVE_HIDDEN'
-,p_encrypt_session_state_yn=>'N'
-,p_attribute_01=>'N'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(990000000000002233)
-,p_name=>'P233_CLAVE_SECRETA'
-,p_item_sequence=>180
-,p_item_plug_id=>wwv_flow_imp.id(263386391525028467)
-,p_display_as=>'NATIVE_HIDDEN'
-,p_encrypt_session_state_yn=>'Y'
-,p_attribute_01=>'Y'
-);
-wwv_flow_imp_page.create_page_item(
- p_id=>wwv_flow_imp.id(990000000000003233)
-,p_name=>'P233_JWT_TOKEN'
-,p_item_sequence=>190
-,p_item_plug_id=>wwv_flow_imp.id(263386391525028467)
-,p_display_as=>'NATIVE_HIDDEN'
-,p_encrypt_session_state_yn=>'Y'
-,p_attribute_01=>'Y'
-);
--- ── DA seq 11: PL/SQL — cargar credenciales desde parámetros ─────────────
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(990000000000011233)
-,p_event_id=>wwv_flow_imp.id(209900000000002233)
-,p_event_result=>'TRUE'
-,p_action_sequence=>11
-,p_execute_on_page_init=>'N'
-,p_action=>'NATIVE_EXECUTE_PLSQL_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'BEGIN',
-'  :P233_NOMBRE_USUARIO := bs_busca_parametro(''VT'',''USUARIO_AGENTE'');',
-'  :P233_CLAVE_SECRETA  := bs_busca_parametro(''VT'',''CLAVE_AGENTE'');',
-'END;'))
-,p_attribute_02=>''
-,p_attribute_03=>'P233_NOMBRE_USUARIO,P233_CLAVE_SECRETA'
-,p_attribute_04=>'N'
-,p_attribute_05=>'PLSQL'
-,p_wait_for_result=>'Y'
-);
--- ── DA seq 21: JS — interceptor fetch transparente con Bearer JWT ─────────
-wwv_flow_imp_page.create_page_da_action(
- p_id=>wwv_flow_imp.id(990000000000012233)
-,p_event_id=>wwv_flow_imp.id(209900000000002233)
-,p_event_result=>'TRUE'
-,p_action_sequence=>21
-,p_execute_on_page_init=>'Y'
-,p_action=>'NATIVE_JAVASCRIPT_CODE'
-,p_attribute_01=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'(function(){',
-'/* Interceptor JWT — inyecta Bearer token en todas las llamadas al agente IA',
-'   sin modificar el codigo existente. El token se obtiene de /auth/token',
-'   usando las credenciales cargadas desde bs_busca_parametro.           */',
-'var _AURL=''https://api.ngosaeca.com.py/agente_comercial'';',
-'var _SK_T=''AI_JWT_233'', _SK_E=''AI_JWT_EXP_233'';',
-'var _oF=window.fetch, _q=[], _busy=false;',
-'',
-'function _exp(){',
-'  return Date.now()>(parseInt(sessionStorage.getItem(_SK_E)||''0'')-120000);',
-'}',
-'',
-'function _doAuth(done){',
-'  var u=apex.item(''P233_NOMBRE_USUARIO'').getValue();',
-'  var p=apex.item(''P233_CLAVE_SECRETA'').getValue();',
-'  if(!u||!p){done(false);return;}',
-'  _oF(_AURL+''/auth/token'',{',
-'    method:''POST'',',
-'    headers:{''Content-Type'':''application/json''},',
-'    body:JSON.stringify({nombre_usuario:u,clave_secreta:p})',
-'  }).then(function(r){return r.json();})',
-'  .then(function(j){',
-'    if(j&&j.access_token){',
-'      sessionStorage.setItem(_SK_T,j.access_token);',
-'      sessionStorage.setItem(_SK_E,String(Date.now()+(parseInt(j.expires_in||28800)*1000)));',
-'      try{apex.item(''P233_JWT_TOKEN'').setValue(j.access_token);}catch(e){}',
-'      done(true);',
-'    }else{',
-'      console.warn(''[AI] auth fallo:'',JSON.stringify(j));',
-'      done(false);',
-'    }',
-'  }).catch(function(e){console.warn(''[AI] auth error'',e);done(false);});',
-'}',
-'',
-'function _ensure(cb){',
-'  var t=sessionStorage.getItem(_SK_T);',
-'  if(t&&!_exp()){cb(t);return;}',
-'  if(_busy){_q.push(cb);return;}',
-'  _busy=true;',
-'  _doAuth(function(ok){',
-'    _busy=false;',
-'    var tok=ok?sessionStorage.getItem(_SK_T):null;',
-'    cb(tok);',
-'    _q.forEach(function(f){f(tok);});',
-'    _q=[];',
-'  });',
-'}',
-'',
-'window.fetch=function(url,opts){',
-'  var s=String(url||'''');',
-'  /* Pasar sin interceptar: llamadas fuera del agente o la propia auth */',
-'  if(s.indexOf(''ngosaeca.com.py/agente_comercial'')===-1||',
-'     s.indexOf(''/auth/token'')!==-1){',
-'    return _oF.apply(window,arguments);',
-'  }',
-'  return new Promise(function(res,rej){',
-'    _ensure(function(tok){',
-'      var o=Object.assign({},opts||{});',
-'      var h=Object.assign({},o.headers||{});',
-'      if(tok){delete h[''X-API-Key''];h[''Authorization'']=''Bearer ''+tok;}',
-'      o.headers=h;',
-'      _oF(url,o).then(res).catch(rej);',
-'    });',
-'  });',
-'};',
-'',
-'/* Autenticar al cargar la página */  ',
-'_ensure(function(t){',
-'  if(t)console.log(''[AI] JWT listo'');',
-'  else console.warn(''[AI] JWT no disponible — verificar USUARIO_AGENTE/CLAVE_AGENTE en parámetros VT'');',
-'});',
-'})();'))
 );
 end;
 /
