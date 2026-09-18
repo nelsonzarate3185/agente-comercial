@@ -88,7 +88,7 @@ REGLAS OBLIGATORIAS — NUNCA las violes:
 11. TIP_COMPROBANTE CRÍTICO — NUNCA uses 'FT'. Los valores correctos son: 'FCR' y 'FCO' para ventas reales, 'NCR' para notas de crédito. Para analizar ventas SIEMPRE filtra: AND TIP_COMPROBANTE IN ('FCR','FCO')
 12. Para filtrar stock por "rubro" o tipo de producto, usa DESC_DIVISION en INV.V_STOCK_agente. Valores típicos: 'PRODUCTOS', 'REPUESTOS'. DESC_FAMILIA para subfamilia.
 13. Para promociones vigentes: AND FECHA_INICIO <= TRUNC(SYSDATE) AND FECHA_FIN >= TRUNC(SYSDATE). PROMO_MIX='S' son promos mix, 'N' son normales. Filtrar COD_EMPRESA_PROMO = :cod_empresa si está en contexto.
-14. ⛔ RESTRICCIÓN CRÍTICA DE VENDEDOR: Si el contexto incluye cod_vendedor, DEBES agregar AND COD_VENDEDOR = :P_COD_VENDEDOR en TODAS las consultas sobre V_VENTAS_agente, V_CLIENTE_agente, V_PEDIDOS_PRODUCTOS y V_METAS_VENDEDORES. Esta restricción es obligatoria e innegociable — garantiza que el vendedor solo vea sus propios datos. Omitirla es un error grave. NO incluyas P_COD_VENDEDOR en el JSON de params, el backend lo inyecta automáticamente. Si el usuario menciona el nombre de un vendedor (ej: "vendedor García"), usa UPPER(NOMBRE_VENDEDOR) LIKE UPPER('%'||:nombre_vend||'%') en el WHERE y agrega {{"nombre_vend": "<nombre>"}} a params.
+14. ⛔ RESTRICCIÓN CRÍTICA DE VENDEDOR: Si el contexto incluye cod_vendedor, DEBES agregar AND COD_VENDEDOR = :P_COD_VENDEDOR en TODAS las consultas sobre V_VENTAS_agente, V_CLIENTE_agente, V_PEDIDOS_AGENTE y V_METAS_VENDEDORES. Esta restricción es obligatoria e innegociable — garantiza que el vendedor solo vea sus propios datos. Omitirla es un error grave. NO incluyas P_COD_VENDEDOR en el JSON de params, el backend lo inyecta automáticamente. Si el usuario menciona el nombre de un vendedor (ej: "vendedor García"), usa UPPER(NOMBRE_VENDEDOR) LIKE UPPER('%'||:nombre_vend||'%') en el WHERE y agrega {{"nombre_vend": "<nombre>"}} a params.
 15. V_STOCK_agente tiene una fila por sucursal. SIEMPRE agrupa y suma. ⛔ NUNCA uses SUM/COUNT/AVG/MIN/MAX en el WHERE — van en HAVING. ⛔ NUNCA uses SUM/MAX/MIN/AVG en ORDER BY — usá el alias del SELECT. Patrón OBLIGATORIO para stock crítico:
 SELECT COD_ARTICULO AS CODIGO, DESC_ARTICULO, SUM(CANT_DISPON) AS cant_dispon_total
 FROM INV.V_STOCK_agente
@@ -122,7 +122,7 @@ WHERE m.COD_EMPRESA = :cod_empresa
   AND TRUNC(SYSDATE) BETWEEN m.FECHA_INICIO AND m.FECHA_FIN
 GROUP BY m.MONTO_META, m.FECHA_INICIO, m.FECHA_FIN
 Si no hay cod_vendedor en contexto (gerente viendo todos), omitir el AND COD_VENDEDOR = :P_COD_VENDEDOR del WHERE de metas y el JOIN — en su lugar agrupar por m.COD_VENDEDOR para mostrar ranking.
-20. PEDIDOS (V_PEDIDOS_PRODUCTOS) — Estados válidos exactos: 'ANULADO','CERRADO','FACTURADO','PARCIALMENTE_FACTURADO','PENDIENTE'.
+20. PEDIDOS (V_PEDIDOS_AGENTE) — Estados válidos exactos: 'ANULADO','CERRADO','FACTURADO','PARCIALMENTE_FACTURADO','PENDIENTE'.
    - Pedidos activos: ESTADO IN ('PENDIENTE','PARCIALMENTE_FACTURADO')
    - Pedidos bloqueados sin autorizar: ESTADO = 'PENDIENTE' AND AUTORIZACION IS NOT NULL
    - Importe pendiente: SUM(IMPORTE_PENDIENTE) — ya calculado en la vista
@@ -133,7 +133,7 @@ Si no hay cod_vendedor en contexto (gerente viendo todos), omitir el AND COD_VEN
 21. ⛔ STRING_AGG no existe en Oracle 12c. SIEMPRE usa LISTAGG(col, ', ') WITHIN GROUP (ORDER BY col).
    ⛔ LISTAGG(DISTINCT ...) tampoco existe en Oracle 12c (se incorporó en 19c). Para concatenar valores distintos usá una subconsulta que deduplique primero:
    ✅ SELECT LISTAGG(COD_ARTICULO, ', ') WITHIN GROUP (ORDER BY COD_ARTICULO) AS articulos
-      FROM (SELECT DISTINCT COD_ARTICULO FROM INV.V_PEDIDOS_PRODUCTOS WHERE ...)
+      FROM (SELECT DISTINCT COD_ARTICULO FROM INV.V_PEDIDOS_AGENTE WHERE ...)
    ❌ STRING_AGG(DISTINCT COD_ARTICULO, ', ') — INVÁLIDO en Oracle
    ❌ LISTAGG(DISTINCT COD_ARTICULO, ', ') WITHIN GROUP (...) — INVÁLIDO en Oracle 12c
 22. ⛔ EXCLUSIÓN PROMOS OBLIGATORIA: En TODAS las consultas de sugerencias de venta/compra y top productos, agrega en V_STOCK_agente: AND UPPER(NVL(DESC_DIVISION,'')) != 'PROMOS'. En V_VENTAS_agente no hay DESC_DIVISION (solo COD_DIVISION código), omitir ahí. Esta exclusión es siempre obligatoria.

@@ -130,7 +130,7 @@ VIEWS: dict[str, dict] = {
         },
         "date_filter_col": "FECHA_INICIO",
     },
-    "INV.V_PEDIDOS_PRODUCTOS": {
+    "INV.V_PEDIDOS_AGENTE": {
         "alias": "pedidos",
         "description": (
             "Líneas de pedidos de clientes con estado de facturación y autorización. "

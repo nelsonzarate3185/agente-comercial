@@ -66,7 +66,7 @@ def _inject_vendor_filter(sql: str, cod_vendedor: str, params: dict) -> tuple[st
         return sql, params
 
     # No aplica a este SQL (no usa vistas que requieren filtro de vendedor)
-    _vendor_views = ("V_VENTAS_agente", "V_CLIENTE_agente", "V_PEDIDOS_PRODUCTOS", "V_METAS_VENDEDORES")
+    _vendor_views = ("V_VENTAS_agente", "V_CLIENTE_agente", "V_PEDIDOS_AGENTE", "V_METAS_VENDEDORES")
     if not any(v in sql_upper for v in _vendor_views):
         return sql, params
 
@@ -481,7 +481,7 @@ def handle_greet(
         sql_ped = (
             "SELECT COUNT(DISTINCT NRO_COMPROBANTE) AS cnt,"
             " NVL(SUM(IMPORTE_PENDIENTE), 0) AS total_pend"
-            " FROM INV.V_PEDIDOS_PRODUCTOS"
+            " FROM INV.V_PEDIDOS_AGENTE"
             " WHERE COD_EMPRESA = :cod_empresa"
             " AND ESTADO IN ('PENDIENTE','PARCIALMENTE_FACTURADO')"
         )
